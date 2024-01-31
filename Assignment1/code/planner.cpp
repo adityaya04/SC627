@@ -404,10 +404,10 @@ vector<int> KNN(const vector<double>& values, int k) {
     return vector<int>(indices.begin() + 1, indices.begin() + k + 1);
 }
 
-std::vector<int> findPath(const std::vector<Node>& nodes) {
+std::vector<int> findPath(const std::vector<Node>& nodes, int start, int goal) {
     std::vector<bool> visited(nodes.size(), false);
     std::vector<int> parent(nodes.size(), -1);
-    int front = 0, rear = 1, start = 0, goal = 1;
+    int front = 0, rear = 1;
     std::vector<int> queue;
     queue.push_back(start);
     visited[start] = true;
@@ -463,7 +463,87 @@ static void plannerRRT(
     int *planlength)
 {
     /* TODO: Replace with your implementation */
-    planner(map, x_size, y_size, armstart_anglesV_rad, armgoal_anglesV_rad, numofDOFs, plan, planlength);
+	int numofsamples = 800, numChecks = 50, K = 800;
+	double STEP_SIZE = 30.0;
+	double Samples[numofsamples + 2][numofDOFs];
+	vector<Node> nodes;
+	int sampleCounter = 0;
+
+	for(int i = 0; i < numofDOFs; i++){
+		Samples[0][i] = armstart_anglesV_rad[i];
+		// Samples[1][i] = armgoal_anglesV_rad[i];
+	}
+	nodes.push_back(Node(0)); // Start
+	// nodes.push_back(Node(1)); // Goal
+	while(sampleCounter < numofsamples){
+		double qrand[numofDOFs], qnew[numofDOFs];
+
+		generateRandomSample(numofDOFs, qrand);
+		Node qnear = nodes[0];
+		double closest_dist = distance(Samples[qnear.id], qrand, numofDOFs);
+		for (Node node : nodes){
+			double dist = distance(Samples[node.id], qrand, numofDOFs);
+			if( dist < closest_dist){
+				closest_dist = dist;
+				qnear = node;
+			}
+		}
+		for(int i = 0; i < numofDOFs; i++){
+			// qnew[i] = Samples[qnear.id][i] + STEP_SIZE * (qrand[i] - Samples[qnear.id][i]) / closest_dist;
+			// qnew[i] = fmod(qnew[i] + M_PI, 2 * M_PI) - M_PI;
+			qnew[i] = (Samples[qnear.id][i] + qrand[i])/2;
+		}
+		if (IsValidArmConfiguration(qnew, numofDOFs, map, x_size, y_size)){
+			if(validEdge(Samples[qnear.id], qnew, numofDOFs, x_size, y_size, map, numChecks)){
+				sampleCounter++;
+				for(int j = 0; j < numofDOFs; j++) Samples[sampleCounter][j] = qnew[j];
+				nodes.push_back(Node(sampleCounter));
+				nodes[sampleCounter].neighbours.push_back(qnear.id);
+				nodes[qnear.id].neighbours.push_back(sampleCounter);   
+			}
+		}
+	}
+
+	nodes.push_back(Node(sampleCounter + 1));
+	for(int i = 0; i < numofDOFs; i++) Samples[sampleCounter + 1][i] = armgoal_anglesV_rad[i];
+	vector<double> distances_goal;
+	for(int i = 0; i < numofsamples + 1; i++)
+		distances_goal.push_back(distance(Samples[i], Samples[numofsamples + 1], numofDOFs));
+	vector<int> indices = KNN(distances_goal, K);
+	for(int j = 0; j < K; j++){
+		if(validEdge(Samples[numofsamples + 1], Samples[indices[j]], numofDOFs, x_size, y_size, map, numChecks)){
+			nodes[numofsamples + 1].neighbours.push_back(indices[j]);
+			nodes[indices[j]].neighbours.push_back(numofsamples + 1);
+		}
+	}
+	// displayGraph(nodes);
+	vector<int> path = findPath(nodes, 0, numofsamples + 1);
+	if (!path.empty()) {
+		std::cout << "Path found: ";
+		for (int node : path) 
+			std::cout << node << " ";
+		std::cout << std::endl;
+
+		const int iF = 8;
+		const float ALPHA = 1.0 / iF;
+		*planlength = (path.size() - 1) * iF + 1;
+		*plan = (double**)malloc(*planlength * sizeof(double*));
+
+		for (int i = 0; i < *planlength; i++) {
+			(*plan)[i] = (double*)malloc(numofDOFs * sizeof(double));
+
+			int idx1 = i / iF;
+			int idx2 = std::min(idx1 + 1, static_cast<int>(path.size()) - 1);
+
+			for (int j = 0; j < numofDOFs; j++) {
+				(*plan)[i][j] = Samples[path[idx1]][j] * (1.0 - ALPHA * (i % iF))
+					+ Samples[path[idx2]][j] * ALPHA * (i % iF);
+			}
+		}
+		std::cout << "Done" << std::endl;
+		} 
+	else std::cout << "No path found." << std::endl; // Modify this to sample more points and repeat
+	return;
 }
 
 
@@ -505,10 +585,9 @@ static void plannerPRM(
 {
     /* TODO: Replace with your implementation */
 	int numofsamples = 1000, K = 5, numChecks = 200;
-	vector<vector <int>> neighbourhood;
-	int sampleCounter = 0;
 	double Samples[numofsamples + 2][numofDOFs];
 	vector<Node> nodes;
+	int sampleCounter = 0;
 
 	/*Creating Nodes*/
 	for(int i = 0; i < numofDOFs; i++){
@@ -542,7 +621,7 @@ static void plannerPRM(
 				}
 	}
 
-	vector<int> path = findPath(nodes);
+	vector<int> path = findPath(nodes, 0, 1);
 	if (!path.empty()) {
 		std::cout << "Path found: ";
 		for (int node : path) 
@@ -565,7 +644,6 @@ static void plannerPRM(
 					+ Samples[path[idx2]][j] * ALPHA * (i % iF);
 			}
 		}
-
 		std::cout << "Done" << std::endl;
 		} 
 	else std::cout << "No path found." << std::endl; // Modify this to sample more points and repeat
