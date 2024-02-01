@@ -463,18 +463,16 @@ static void plannerRRT(
     int *planlength)
 {
     /* TODO: Replace with your implementation */
-	int numofsamples = 800, numChecks = 50, K = 800;
-	double STEP_SIZE = 30.0;
+	int numofsamples = 2000, numChecks = 50, K = 600;
+	double STEP_SIZE = 0.7;
 	double Samples[numofsamples + 2][numofDOFs];
 	vector<Node> nodes;
 	int sampleCounter = 0;
 
 	for(int i = 0; i < numofDOFs; i++){
 		Samples[0][i] = armstart_anglesV_rad[i];
-		// Samples[1][i] = armgoal_anglesV_rad[i];
 	}
 	nodes.push_back(Node(0)); // Start
-	// nodes.push_back(Node(1)); // Goal
 	while(sampleCounter < numofsamples){
 		double qrand[numofDOFs], qnew[numofDOFs];
 
@@ -489,9 +487,8 @@ static void plannerRRT(
 			}
 		}
 		for(int i = 0; i < numofDOFs; i++){
-			// qnew[i] = Samples[qnear.id][i] + STEP_SIZE * (qrand[i] - Samples[qnear.id][i]) / closest_dist;
-			// qnew[i] = fmod(qnew[i] + M_PI, 2 * M_PI) - M_PI;
-			qnew[i] = (Samples[qnear.id][i] + qrand[i])/2;
+			qnew[i] = Samples[qnear.id][i] + STEP_SIZE * (qrand[i] - Samples[qnear.id][i]) / closest_dist;
+			qnew[i] = fmod(qnew[i] , 2 * M_PI);
 		}
 		if (IsValidArmConfiguration(qnew, numofDOFs, map, x_size, y_size)){
 			if(validEdge(Samples[qnear.id], qnew, numofDOFs, x_size, y_size, map, numChecks)){
@@ -584,7 +581,7 @@ static void plannerPRM(
     int *planlength)
 {
     /* TODO: Replace with your implementation */
-	int numofsamples = 1000, K = 5, numChecks = 200;
+	int numofsamples = 2000, K = 5, numChecks = 200;
 	double Samples[numofsamples + 2][numofDOFs];
 	vector<Node> nodes;
 	int sampleCounter = 0;
@@ -628,7 +625,7 @@ static void plannerPRM(
 			std::cout << node << " ";
 		std::cout << std::endl;
 
-		const int iF = 20;
+		const int iF = 20; 
 		const float ALPHA = 1.0 / iF;
 		*planlength = (path.size() - 1) * iF + 1;
 		*plan = (double**)malloc(*planlength * sizeof(double*));
