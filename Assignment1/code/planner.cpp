@@ -392,6 +392,13 @@ struct Node
 	Node(int nodeID) : id(nodeID) {}
 };
 
+struct StarNode
+{
+	int id, parent;
+	double cost;
+	StarNode(int nodeID) : id(nodeID) {}
+};
+
 bool edgeExists(Node& node, int neighbour){
 	return std::find(node.neighbours.begin(), node.neighbours.end(), neighbour) != node.neighbours.end();
 }
@@ -446,6 +453,7 @@ void displayGraph(const std::vector<Node>& graph) {
     }
 }
 
+
 //*******************************************************************************************************************//
 //                                                                                                                   //
 //                                              RRT IMPLEMENTATION                                                   //
@@ -475,7 +483,6 @@ static void plannerRRT(
 	nodes.push_back(Node(0)); // Start
 	while(sampleCounter < numofsamples){
 		double qrand[numofDOFs], qnew[numofDOFs];
-
 		generateRandomSample(numofDOFs, qrand);
 		Node qnear = nodes[0];
 		double closest_dist = distance(Samples[qnear.id], qrand, numofDOFs);
@@ -538,7 +545,7 @@ static void plannerRRT(
 			}
 		}
 		std::cout << "Done" << std::endl;
-		} 
+	} 
 	else std::cout << "No path found." << std::endl; // Modify this to sample more points and repeat
 	return;
 }
@@ -561,7 +568,119 @@ static void plannerRRTStar(
     int *planlength)
 {
     /* TODO: Replace with your implementation */
-    planner(map, x_size, y_size, armstart_anglesV_rad, armgoal_anglesV_rad, numofDOFs, plan, planlength);
+	int numofsamples = 3000, numChecks = 200, K = 200;
+	double STEP_SIZE = 0.3, NBRradius = 0.5;
+	double Samples[numofsamples + 2][numofDOFs];
+	vector<StarNode> nodes;
+	int sampleCounter = 0;
+
+	for(int i = 0; i < numofDOFs; i++){
+		Samples[0][i] = armstart_anglesV_rad[i];
+	}
+	nodes.push_back(StarNode(0)); // Start
+	nodes[0].cost = 0.0; // Start node cost
+
+	while(sampleCounter < numofsamples){
+		double qrand[numofDOFs], qnew[numofDOFs];
+		generateRandomSample(numofDOFs, qrand);
+		StarNode qnear = nodes[0];
+		double closest_dist = distance(Samples[qnear.id], qrand, numofDOFs);
+		for (StarNode node : nodes){
+			double dist = distance(Samples[node.id], qrand, numofDOFs);
+			if( dist < closest_dist){
+				closest_dist = dist;
+				qnear = node;
+			}
+		}
+		for(int i = 0; i < numofDOFs; i++){
+			qnew[i] = Samples[qnear.id][i] + STEP_SIZE * (qrand[i] - Samples[qnear.id][i]) / closest_dist;
+			qnew[i] = fmod(qnew[i] , 2 * M_PI);
+		}
+		StarNode newNode(sampleCounter + 1);
+		newNode.cost = qnear.cost + STEP_SIZE;
+		newNode.parent = qnear.id;
+
+		if (IsValidArmConfiguration(qnew, numofDOFs, map, x_size, y_size)){
+			vector<int> neighbourhood;
+			vector<double> nbr_distances;
+			for(StarNode node : nodes){
+				double dist = distance(Samples[node.id], qnew, numofDOFs);
+				if (dist < NBRradius) {
+					neighbourhood.push_back(node.id);
+					nbr_distances.push_back(dist);
+					if ((dist + node.cost) < newNode.cost){
+						newNode.parent = node.id;
+						newNode.cost = dist + node.cost;
+					}
+				}
+			}
+			if(validEdge(Samples[newNode.parent], qnew, numofDOFs, x_size, y_size, map, numChecks)){
+				sampleCounter++;
+				for(int j = 0; j < numofDOFs; j++) Samples[sampleCounter][j] = qnew[j];
+				nodes.push_back(newNode);
+				for(int j = 0; j < neighbourhood.size(); j++){
+					if((newNode.cost + nbr_distances[j] < nodes[j].cost) && 
+									validEdge(Samples[newNode.id], Samples[neighbourhood[j]], numofDOFs, x_size, y_size, map, numChecks)){
+						nodes[j].cost = newNode.cost + nbr_distances[j];
+						nodes[j].parent = newNode.id;
+					}
+				}
+			}
+		}
+	}
+	bool found_goal = false;
+	nodes.push_back(StarNode(sampleCounter + 1));
+	for(int i = 0; i < numofDOFs; i++) Samples[sampleCounter + 1][i] = armgoal_anglesV_rad[i];
+	vector<double> distances_goal;
+	for(int i = 0; i < numofsamples + 1; i++)
+		distances_goal.push_back(distance(Samples[i], Samples[numofsamples + 1], numofDOFs));
+	vector<int> indices = KNN(distances_goal, K);
+	nodes[sampleCounter+1].parent = indices[0];
+	nodes[sampleCounter+1].cost = nodes[indices[0]].cost + distances_goal[indices[0]];
+	for(int j = 0; j < K; j++){
+		if(validEdge(Samples[numofsamples + 1], Samples[indices[j]], numofDOFs, x_size, y_size, map, numChecks)){
+			if(distances_goal[indices[j]] + nodes[indices[j]].cost < nodes[sampleCounter + 1].cost){
+				nodes[sampleCounter + 1].cost = distances_goal[indices[j]] + nodes[indices[j]].cost;
+				nodes[sampleCounter + 1].parent = indices[j];
+			}
+			found_goal = true;
+		}
+	}
+	if(found_goal){
+		vector<int> path;
+		int current = sampleCounter + 1;
+		while (current != 0)
+		{
+			path.push_back(current);
+			current = nodes[current].parent;
+		}
+		path.push_back(0);
+		std::reverse(path.begin(), path.end());
+		std::cout << "Path found: ";
+		for (int node : path) 
+			std::cout << node << " ";
+		std::cout << std::endl;
+
+		const int iF = 5; 
+		const float ALPHA = 1.0 / iF;
+		*planlength = (path.size() - 1) * iF + 1;
+		*plan = (double**)malloc(*planlength * sizeof(double*));
+
+		for (int i = 0; i < *planlength; i++) {
+			(*plan)[i] = (double*)malloc(numofDOFs * sizeof(double));
+
+			int idx1 = i / iF;
+			int idx2 = std::min(idx1 + 1, static_cast<int>(path.size()) - 1);
+
+			for (int j = 0; j < numofDOFs; j++) {
+				(*plan)[i][j] = Samples[path[idx1]][j] * (1.0 - ALPHA * (i % iF))
+					+ Samples[path[idx2]][j] * ALPHA * (i % iF);
+			}
+		}
+		std::cout << "Done" << std::endl;
+	}
+	else std::cout << "No path found." << std::endl; // Modify this to sample more points and repeat
+	return;
 }
 
 //*******************************************************************************************************************//
@@ -642,7 +761,7 @@ static void plannerPRM(
 			}
 		}
 		std::cout << "Done" << std::endl;
-		} 
+	} 
 	else std::cout << "No path found." << std::endl; // Modify this to sample more points and repeat
 	return;
 }
