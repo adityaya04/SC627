@@ -471,9 +471,9 @@ static void plannerRRT(
     int *planlength)
 {
     /* TODO: Replace with your implementation */
-	int numofsamples = 3000, numChecks = 200, K = 600;
-	double STEP_SIZE = 0.3;
-	const int iF = 2;
+	int numofsamples = 2000, numChecks = 200, K = 400;
+	double STEP_SIZE = 0.7;
+	const int iF = 1;
 		const float ALPHA = 1.0 / iF;
 	double Samples[numofsamples + 2][numofDOFs];
 	vector<Node> nodes;
@@ -568,7 +568,7 @@ static void plannerRRTStar(
     int *planlength)
 {
     /* TODO: Replace with your implementation */
-	int numofsamples = 1000, numChecks = 200, K = 200;
+	int numofsamples = 2000, numChecks = 200, K = 400;
 	double STEP_SIZE = 0.7, NBRradius = 1.0;
 	double Samples[numofsamples + 2][numofDOFs];
 	vector<StarNode> nodes;
@@ -642,8 +642,6 @@ static void plannerRRTStar(
 			}
 		}
 	}
-	cout << "here" << endl;
-	/*Unedited */
 	nodes.push_back(StarNode(sampleCounter + 1));
 	for(int i = 0; i < numofDOFs; i++) Samples[sampleCounter + 1][i] = armgoal_anglesV_rad[i];
 	vector<double> distances_goal;
