@@ -528,15 +528,32 @@ void displayGraph(const std::vector<Node>& graph) {
 //                                                                                                                   //
 //*******************************************************************************************************************//
 
-vector<Node> createRRT(vector<Node> nodes, int numofsamples, double *map, int x_size, int y_size, int numofDOFs){
-	int sampleCounter = nodes.size();
+static void plannerRRT(
+    double *map,
+    int x_size,
+    int y_size,
+    double *armstart_anglesV_rad,
+    double *armgoal_anglesV_rad,
+    int numofDOFs,
+    double ***plan,
+    int *planlength)
+{
+    /* TODO: Replace with your implementation */
+	int numofsamples = 1000, numChecks = 100, K = 400;
 	double STEP_SIZE = 0.7;
-	int numChecks = 100;
+	const int iF = 1;
+		const float ALPHA = 1.0 / iF;
+	vector<Node> nodes;
+	int sampleCounter = 0;
 
+	nodes.push_back(Node(0)); // Start
+	for(int i = 0; i < numofDOFs; i++){
+		nodes[0].angles.push_back(armstart_anglesV_rad[i]);
+	}
 	while(sampleCounter < numofsamples){
 		Node qrand = generateRandomSample(numofDOFs, 0);
 		Node qnear = nodes[0];
-		Node qnew(sampleCounter);
+		Node qnew(sampleCounter+1);
 		double closest_dist = distance(qnear, qrand, numofDOFs);
 		for (Node node : nodes){
 			double dist = distance(node, qrand, numofDOFs);
@@ -550,94 +567,54 @@ vector<Node> createRRT(vector<Node> nodes, int numofsamples, double *map, int x_
 			qnew.angles[i] = fmod(qnew.angles[i] , 2 * M_PI);
 		}
 		if(validEdge(qnear, qnew, numofDOFs, x_size, y_size, map, numChecks)){
+			sampleCounter++;
 			qnew.neighbours.push_back(qnear.id);
 			nodes[qnear.id].neighbours.push_back(sampleCounter);   
 			nodes.push_back(qnew);
-			sampleCounter++;
 		}
 		
 	}
-	return nodes;
-}
 
-static void plannerRRT(
-    double *map,
-    int x_size,
-    int y_size,
-    double *armstart_anglesV_rad,
-    double *armgoal_anglesV_rad,
-    int numofDOFs,
-    double ***plan,
-    int *planlength)
-{
-    /* TODO: Replace with your implementation */
-	int numChecks = 100, K = 400;
-	double STEP_SIZE = 0.7;
-	const int iF = 1;
-		const float ALPHA = 1.0 / iF;
-	vector<Node> nodes;
-
-	nodes.push_back(Node(0)); // Start
-	for(int i = 0; i < numofDOFs; i++){
-		nodes[0].angles.push_back(armstart_anglesV_rad[i]);
+	nodes.push_back(Node(sampleCounter + 1));
+	for(int i = 0; i < numofDOFs; i++) nodes[sampleCounter + 1].angles.push_back(armgoal_anglesV_rad[i]);
+	vector<double> distances_goal;
+	for(int i = 0; i < numofsamples + 1; i++)
+		distances_goal.push_back(distance(nodes[i], nodes[numofsamples + 1], numofDOFs));
+	vector<int> indices = KNN(distances_goal, K);
+	for(int j = 0; j < K; j++){
+		if(validEdge(nodes[numofsamples + 1], nodes[indices[j]], numofDOFs, x_size, y_size, map, numChecks)){
+			nodes[numofsamples + 1].neighbours.push_back(indices[j]);
+			nodes[indices[j]].neighbours.push_back(numofsamples + 1);
+		}
 	}
-	
-	while(1){
-		int start_size = nodes.size();
-		if (start_size == 1) nodes = createRRT(nodes, 1000, map, x_size, y_size, numofDOFs);
-		else{
-			nodes = createRRT(nodes, start_size + 300, map, x_size, y_size, numofDOFs);
-			cout << "Taking more nodes " << start_size << endl;	
-		} 
+	// displayGraph(nodes);
+	vector<int> path = findPath(nodes, 0, numofsamples + 1);
+	if (!path.empty()) {
+		std::cout << "Path found: ";
+		for (int node : path) 
+			std::cout << node << " ";
+		std::cout << std::endl;
+		double cost = 0.0;
+		for(int i = 0; i < path.size() - 1; i++)
+			cost += distance(nodes[path[i]], nodes[path[i+1]], numofDOFs);
+		cout << "Cost of RRT : " << cost << endl;
 
-		vector<Node> graph = nodes;
-		int goal = graph.size();
-		Node Goal(goal);
-		for(int i = 0; i < numofDOFs; i++) Goal.angles.push_back(armgoal_anglesV_rad[i]);
-		vector<double> distances_goal;
-		for(int i = 0; i < goal; i++)
-			distances_goal.push_back(distance(graph[i], Goal, numofDOFs));
-		vector<int> indices = KNN(distances_goal, K);
-		bool found_goal = false;
-		for(int j = 0; j < K; j++){
-			if(validEdge(Goal, graph[indices[j]], numofDOFs, x_size, y_size, map, numChecks)){
-				Goal.neighbours.push_back(indices[j]);
-				graph[indices[j]].neighbours.push_back(goal);
-				found_goal = true;
+		*planlength = (path.size() - 1) * iF + 1;
+		*plan = (double**)malloc(*planlength * sizeof(double*));
+
+		for (int i = 0; i < *planlength; i++) {
+			(*plan)[i] = (double*)malloc(numofDOFs * sizeof(double));
+
+			int idx1 = i / iF;
+			int idx2 = std::min(idx1 + 1, static_cast<int>(path.size()) - 1);
+
+			for (int j = 0; j < numofDOFs; j++) {
+				(*plan)[i][j] = nodes[path[idx1]].angles[j] * (1.0 - ALPHA * (i % iF))
+					+ nodes[path[idx2]].angles[j] * ALPHA * (i % iF);
 			}
 		}
-		// displayGraph(nodes);
-		if(found_goal){
-			graph.push_back(Goal);
-			vector<int> path = findPath(graph, 0, goal);
-			if (!path.empty()) {
-				std::cout << "Path found: ";
-				for (int node : path) 
-					std::cout << node << " ";
-				std::cout << std::endl;
-				double cost = 0.0;
-				for(int i = 0; i < path.size() - 1; i++)
-					cost += distance(graph[path[i]], graph[path[i+1]], numofDOFs);
-				cout << "Cost of RRT : " << cost << endl;
-
-				*planlength = (path.size() - 1) * iF + 1;
-				*plan = (double**)malloc(*planlength * sizeof(double*));
-
-				for (int i = 0; i < *planlength; i++) {
-					(*plan)[i] = (double*)malloc(numofDOFs * sizeof(double));
-
-					int idx1 = i / iF;
-					int idx2 = std::min(idx1 + 1, static_cast<int>(path.size()) - 1);
-
-					for (int j = 0; j < numofDOFs; j++) {
-						(*plan)[i][j] = graph[path[idx1]].angles[j] * (1.0 - ALPHA * (i % iF))
-							+ graph[path[idx2]].angles[j] * ALPHA * (i % iF);
-					}
-				}
-				return;
-			}
-		} 
-	}
+	} 
+	else std::cout << "No path found." << std::endl; // Modify this to sample more points and repeat
 	return;
 }
 
@@ -796,36 +773,6 @@ static void plannerRRTStar(
 //                                              PRM IMPLEMENTATION                                                   //
 //                                                                                                                   //
 //*******************************************************************************************************************//
-vector<Node> createGraph(vector<Node> nodes, int numofsamples, double *map, int x_size, int y_size, int numofDOFs){
-	int sampleCounter = nodes.size();
-	int K = 20, numChecks = 200;
-
-	while(sampleCounter < numofsamples){
-		double sample[numofDOFs];
-		generateRandomSample(numofDOFs, sample);
-		if(IsValidArmConfiguration(sample, numofDOFs, map, x_size, y_size)){
-			nodes.push_back(Node(sampleCounter));
-			for(int i = 0; i < numofDOFs; i++) 
-				nodes[sampleCounter].angles.push_back(sample[i]);
-			sampleCounter++;
-		}
-	}
-
-	/*Forming neighbourhood*/
-	for(int i = 0; i < numofsamples; i++){
-		vector<double> distances;
-		for(int j = 0; j < numofsamples; j++)
-			distances.push_back(distance(nodes[i], nodes[j], numofDOFs));
-		vector<int> indices = KNN(distances, K);
-		for(int j = 0; j < K; j++)
-			if(!edgeExists(nodes[i], j) && i!=j)
-				if(validEdge(nodes[i], nodes[j], numofDOFs, x_size, y_size, map, numChecks)){
-					nodes[i].neighbours.push_back(j);
-					nodes[j].neighbours.push_back(i);
-				}
-	}
-	return nodes;
-}
 
 static void plannerPRM(
     double *map,
@@ -838,83 +785,71 @@ static void plannerPRM(
     int *planlength)
 {
     /* TODO: Replace with your implementation */
-	int K = 400, numChecks = 200;
+	int numofsamples = 2000, K = 5, numChecks = 200;
 	vector<Node> nodes;
 	int sampleCounter = 0;
-	bool success = false;
+
 	/*Creating Nodes*/
-	Node Start(-1), Goal(-1);
+	nodes.push_back(Node(0)); // Start
+	nodes.push_back(Node(1)); // Goal
 	for(int i = 0; i < numofDOFs; i++){
-		Start.angles.push_back(armstart_anglesV_rad[i]);
-		Goal.angles.push_back(armgoal_anglesV_rad[i]);
+		nodes[0].angles.push_back(armstart_anglesV_rad[i]);
+		nodes[1].angles.push_back(armgoal_anglesV_rad[i]);
 	}
-	vector<double> distances_goal, distances_start;
-	while (!success){
-		int start_size = nodes.size();
-		if(start_size == 0) nodes = createGraph(nodes, 1000, map, x_size, y_size, numofDOFs);
-		else{
-			cout << "Taking more nodes " << start_size << endl;
-			nodes = createGraph(nodes, start_size + 500, map, x_size, y_size, numofDOFs);
-		} 
-		vector<Node> graph = nodes;
-		Start.id = nodes.size();
-		Goal.id = nodes.size() + 1;
-		graph.push_back(Start);
-		graph.push_back(Goal);
-
-		
-		for(int i = start_size; i < graph.size() - 2; i++){
-			distances_goal.push_back(distance(Goal, graph[i], numofDOFs));
-			distances_start.push_back(distance(Start, graph[i], numofDOFs));
+	while(sampleCounter < numofsamples){
+		double sample[numofDOFs];
+		generateRandomSample(numofDOFs, sample);
+		if(IsValidArmConfiguration(sample, numofDOFs, map, x_size, y_size)){
+			nodes.push_back(sampleCounter + 2);
+			for(int i = 0; i < numofDOFs; i++) 
+				nodes[sampleCounter + 2].angles.push_back(sample[i]);
+			sampleCounter++;
 		}
-		vector<int> goal_indices = KNN(distances_goal, K);
-		vector<int> start_indices = KNN(distances_start, K);
+	}
 
-		int goal = graph.size() - 1;
-		int start = graph.size() - 2;
-		for(int j = 0; j < K; j++){
-			if(validEdge(graph[goal], graph[goal_indices[j]], numofDOFs, x_size, y_size, map, numChecks)){
-				graph[goal].neighbours.push_back(goal_indices[j]);
-				graph[goal_indices[j]].neighbours.push_back(goal);	
-			}
-			if(validEdge(graph[start], graph[start_indices[j]], numofDOFs, x_size, y_size, map, numChecks)){
-				graph[start].neighbours.push_back(start_indices[j]);
-				graph[start_indices[j]].neighbours.push_back(start);	
-			}
-		}
-		vector<int> path = findPath(graph, start, goal);
-		if (!path.empty()) {
-			cout << "Path found: ";
-			for (int node : path) 
-				cout << node << " ";
-			cout << endl;
-			double cost = 0.0;
-			for(int i = 0; i < path.size() - 1; i++)
-				cost += distance(graph[path[i]], graph[path[i+1]], numofDOFs);
-			cout << "Cost of PRM : " << cost << endl;
-
-			const int iF = 20; 
-			const float ALPHA = 1.0 / iF;
-			*planlength = (path.size() - 1) * iF + 1;
-			*plan = (double**)malloc(*planlength * sizeof(double*));
-
-			for (int i = 0; i < *planlength; i++) {
-				(*plan)[i] = (double*)malloc(numofDOFs * sizeof(double));
-
-				int idx1 = i / iF;
-				int idx2 = std::min(idx1 + 1, static_cast<int>(path.size()) - 1);
-
-				for (int j = 0; j < numofDOFs; j++) {
-					(*plan)[i][j] = graph[path[idx1]].angles[j] * (1.0 - ALPHA * (i % iF))
-						+ graph[path[idx2]].angles[j] * ALPHA * (i % iF);
+	/*Forming neighbourhood*/
+	for(int i = 0; i < numofsamples + 2; i++){
+		vector<double> distances;
+		for(int j = 0; j < numofsamples + 2; j++)
+			distances.push_back(distance(nodes[i], nodes[j], numofDOFs));
+		vector<int> indices = KNN(distances, K);
+		for(int j = 0; j < K; j++)
+			if(!edgeExists(nodes[i], j) && i!=j)
+				if(validEdge(nodes[i], nodes[j], numofDOFs, x_size, y_size, map, numChecks)){
+					nodes[i].neighbours.push_back(j);
+					nodes[j].neighbours.push_back(i);
 				}
-			}
-			std::cout << "Done" << std::endl;
-			success = true;
-			return;
-		} 
 	}
+	vector<int> path = findPath(nodes, 0, 1);
+	if (!path.empty()) {
+		std::cout << "Path found: ";
+		for (int node : path) 
+			std::cout << node << " ";
+		std::cout << std::endl;
+		double cost = 0.0;
+		for(int i = 0; i < path.size() - 1; i++)
+			cost += distance(nodes[path[i]], nodes[path[i+1]], numofDOFs);
+		cout << "Cost of PRM : " << cost << endl;
 
+		const int iF = 20; 
+		const float ALPHA = 1.0 / iF;
+		*planlength = (path.size() - 1) * iF + 1;
+		*plan = (double**)malloc(*planlength * sizeof(double*));
+
+		for (int i = 0; i < *planlength; i++) {
+			(*plan)[i] = (double*)malloc(numofDOFs * sizeof(double));
+
+			int idx1 = i / iF;
+			int idx2 = std::min(idx1 + 1, static_cast<int>(path.size()) - 1);
+
+			for (int j = 0; j < numofDOFs; j++) {
+				(*plan)[i][j] = nodes[path[idx1]].angles[j] * (1.0 - ALPHA * (i % iF))
+					+ nodes[path[idx2]].angles[j] * ALPHA * (i % iF);
+			}
+		}
+		std::cout << "Done" << std::endl;
+	} 
+	else std::cout << "No path found." << std::endl; // Modify this to sample more points and repeat
 	return;
 }
 
@@ -940,67 +875,24 @@ int main(int argc, char** argv) {
 	int x_size, y_size;
 
 	tie(map, x_size, y_size) = loadMap(argv[1]);
-	const int numOfDOFs = std::stoi(argv[2]);
-	double* startPos = doubleArrayFromString(argv[3]);
-	double* goalPos = doubleArrayFromString(argv[4]);
-	int whichPlanner = std::stoi(argv[5]);
-	string outputFile = argv[6];
-
-	if(!IsValidArmConfiguration(startPos, numOfDOFs, map, x_size, y_size)||
-			!IsValidArmConfiguration(goalPos, numOfDOFs, map, x_size, y_size)) {
-		throw runtime_error("Invalid start or goal configuration!\n");
-	}
-
-	///////////////////////////////////////
-	//// Feel free to modify anything below. Be careful modifying anything above.
-
-	double** plan = NULL;
-	int planlength = 0;
-
-    // Call the corresponding planner function
-    if (whichPlanner == PRM)
-    {
-        plannerPRM(map, x_size, y_size, startPos, goalPos, numOfDOFs, &plan, &planlength);
-    }
-    else if (whichPlanner == RRT)
-    {
-        plannerRRT(map, x_size, y_size, startPos, goalPos, numOfDOFs, &plan, &planlength);
-    }
-    else if (whichPlanner == RRTSTAR)
-    {
-        plannerRRTStar(map, x_size, y_size, startPos, goalPos, numOfDOFs, &plan, &planlength);
-    }
-    else
-    {
-        planner(map, x_size, y_size, startPos, goalPos, numOfDOFs, &plan, &planlength);
-    }
-
-	//// Feel free to modify anything above.
-	//// If you modify something below, please change it back afterwards as my 
-	//// grading script will not work and you will recieve a 0.
-	///////////////////////////////////////
-
-    // Your solution's path should start with startPos and end with goalPos
-    if (!equalDoubleArrays(plan[0], startPos, numOfDOFs) || 
-    	!equalDoubleArrays(plan[planlength-1], goalPos, numOfDOFs)) {
-		throw std::runtime_error("Start or goal position not matching");
-	}
-
-	/** Saves the solution to output file
-	 * Do not modify the output log file output format as it is required for visualization
-	 * and for grading.
-	 */
-	std::ofstream m_log_fstream;
+	const int numOfDOFs = 3;
+	string outputFile = "positions.txt";
+    std::ofstream m_log_fstream;
 	m_log_fstream.open(outputFile, std::ios::trunc); // Creates new or replaces existing file
 	if (!m_log_fstream.is_open()) {
 		throw std::runtime_error("Cannot open file");
 	}
-	m_log_fstream << argv[1] << endl; // Write out map name first
-	/// Then write out all the joint angles in the plan sequentially
-	for (int i = 0; i < planlength; ++i) {
-		for (int k = 0; k < numOfDOFs; ++k) {
-			m_log_fstream << plan[i][k] << ",";
-		}
-		m_log_fstream << endl;
-	}
+    int numsamples = 20 * 2;
+    int sampleCounter = 0;
+    while (sampleCounter < numsamples)      
+    {
+        double sample[numOfDOFs];
+        generateRandomSample(numOfDOFs, sample);
+        if(IsValidArmConfiguration(sample, numOfDOFs, map, x_size, y_size)){
+            for(int i = 0; i < numOfDOFs; i++)
+                m_log_fstream << sample[i]<< ",";
+            m_log_fstream << endl;
+            sampleCounter++;
+        }
+    }
 }
