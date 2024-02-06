@@ -1,0 +1,31 @@
+Executing: ./planner.out map2.txt 3 1.16939,2.17698,2.55412 0.44791,2.29739,1.56643 0 myOutput.txt
+Path found: 0 1000 
+Cost of RRT : 1.22905
+Nodes : 1001
+Time taken: 2.396858977 seconds
+Executing: ./planner.out map2.txt 3 0.44791,2.29739,1.56643 1.56436,0.659489,3.35158 0 myOutput.txt
+Path found: 0 23 231 1000 
+Cost of RRT : 3.0798
+Nodes : 1001
+Time taken: 2.354937795 seconds
+Executing: ./planner.out map2.txt 3 0.505532,6.05167,1.87058 1.03822,1.13466,0.249329 0 myOutput.txt
+Path found: 0 1 5 6 7 10 11 13 26 42 44 46 907 1000 
+Cost of RRT : 11.2208
+Nodes : 1001
+Time taken: 2.330349549 seconds
+Executing: ./planner.out map2.txt 3 1.56436,0.659489,3.35158 1.76498,0.0627376,4.26948 0 myOutput.txt
+Path found: 0 1000 
+Cost of RRT : 1.11306
+Nodes : 1001
+Time taken: 2.290221001 seconds
+Executing: ./planner.out map2.txt 3 0.493147,1.97093,3.21281 1.18072,0.937325,3.34837 0 myOutput.txt
+Path found: 0 1000 
+Cost of RRT : 1.24879
+Nodes : 1001
+Time taken: 2.363553811 seconds
+Executing: ./planner.out map2.txt 3 1.03822,1.13466,0.249329 1.07059,2.24568,3.59389 0 myOutput.txt
+Path found: 0 5 11 1000 
+Cost of RRT : 4.69675
+Nodes : 1001
+Time taken: 2.418095242 seconds
+Executing: ./planner.out map2.txt 3 1.80947,2.15132,5.45925 1.63953,2.53115,3.51007 0 myOutput.txt

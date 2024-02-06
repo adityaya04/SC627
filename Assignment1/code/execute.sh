@@ -18,8 +18,20 @@ fi
 while IFS= read -r command; do
     if [ -n "$command" ]; then
         echo "Executing: $command"
+        
+        # Record the start time
+        start_time=$(date +%s.%N)
+
+        # Execute the command
         eval "$command"
         status=$?
+
+        # Record the end time
+        end_time=$(date +%s.%N)
+
+        # Calculate and print the time taken
+        elapsed_time=$(echo "$end_time - $start_time" | bc)
+        echo "Time taken: $elapsed_time seconds"
 
         if [ $status -ne 0 ]; then
             echo "Error: Command exited with status $status"
