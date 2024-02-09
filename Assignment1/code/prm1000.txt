@@ -1,0 +1,123 @@
+Executing: ./planner.out map2.txt 3 1.16939,2.17698,2.55412 0.44791,2.29739,1.56643 2 myOutput.txt
+Path found: 1000 785 1001 
+Cost of PRM : 1.3709
+Nodes : 1001
+Done
+Time taken: 1.672388523 seconds
+Executing: ./planner.out map2.txt 3 0.44791,2.29739,1.56643 1.56436,0.659489,3.35158 2 myOutput.txt
+Path found: 1000 745 5 1001 
+Cost of PRM : 5.5069
+Nodes : 1001
+Done
+Time taken: 2.042698843 seconds
+Executing: ./planner.out map2.txt 3 0.505532,6.05167,1.87058 1.03822,1.13466,0.249329 2 myOutput.txt
+Path found: 1000 19 855 46 1 1001 
+Cost of PRM : 6.14405
+Nodes : 1001
+Done
+Time taken: 1.991849876 seconds
+Executing: ./planner.out map2.txt 3 1.56436,0.659489,3.35158 1.76498,0.0627376,4.26948 2 myOutput.txt
+Path found: 1000 371 1001 
+Cost of PRM : 1.12956
+Nodes : 1001
+Done
+Time taken: 1.972328427 seconds
+Executing: ./planner.out map2.txt 3 0.493147,1.97093,3.21281 1.18072,0.937325,3.34837 2 myOutput.txt
+Path found: 1000 997 1001 
+Cost of PRM : 1.41282
+Nodes : 1001
+Done
+Time taken: 1.848272741 seconds
+Executing: ./planner.out map2.txt 3 1.03822,1.13466,0.249329 1.07059,2.24568,3.59389 2 myOutput.txt
+Path found: 1000 109 15 1001 
+Cost of PRM : 3.89567
+Nodes : 1001
+Done
+Time taken: 1.881040829 seconds
+Executing: ./planner.out map2.txt 3 1.80947,2.15132,5.45925 1.63953,2.53115,3.51007 2 myOutput.txt
+Path found: 1000 971 0 1001 
+Cost of PRM : 2.93327
+Nodes : 1001
+Done
+Time taken: 2.010710236 seconds
+Executing: ./planner.out map2.txt 3 1.76498,0.0627376,4.26948 1.6239,3.1066,3.1683 2 myOutput.txt
+Path found: 1000 577 47 1001 
+Cost of PRM : 3.80823
+Nodes : 1001
+Done
+Time taken: 2.034087175 seconds
+Executing: ./planner.out map2.txt 3 1.49846,0.776438,0.398285 1.82837,1.21126,0.813401 2 myOutput.txt
+Path found: 1000 750 1001 
+Cost of PRM : 0.920477
+Nodes : 1001
+Done
+Time taken: 1.779482043 seconds
+Executing: ./planner.out map2.txt 3 1.18072,0.937325,3.34837 0.723748,2.01921,0.583081 2 myOutput.txt
+Path found: 1000 293 22 1001 
+Cost of PRM : 3.3242
+Nodes : 1001
+Done
+Time taken: 1.999232863 seconds
+Executing: ./planner.out map2.txt 3 0.0492084,2.69799,0.920987 0.129529,1.76711,5.46182 2 myOutput.txt
+Path found: 1000 24 382 1001 
+Cost of PRM : 4.45189
+Nodes : 1001
+Done
+Time taken: 2.152161813 seconds
+Executing: ./planner.out map2.txt 3 1.07059,2.24568,3.59389 1.4269,2.30389,2.78102 2 myOutput.txt
+Path found: 1000 685 1001 
+Cost of PRM : 1.20965
+Nodes : 1001
+Done
+Time taken: 1.938853888 seconds
+Executing: ./planner.out map2.txt 3 1.10637,1.88138,1.6882 0.848594,5.8023,0.553843 2 myOutput.txt
+Path found: 1000 6 214 44 21 1001 
+Cost of PRM : 6.55114
+Nodes : 1001
+Done
+Time taken: 1.858420637 seconds
+Executing: ./planner.out map2.txt 3 1.63953,2.53115,3.51007 1.70435,1.99792,4.8015 2 myOutput.txt
+Path found: 1000 216 1001 
+Cost of PRM : 1.52557
+Nodes : 1001
+Done
+Time taken: 2.102041922 seconds
+Executing: ./planner.out map2.txt 3 0.548883,1.9482,2.62778 0.644573,3.11689,5.69033 2 myOutput.txt
+Path found: 1000 995 48 1001 
+Cost of PRM : 4.5879
+Nodes : 1001
+Done
+Time taken: 2.203287968 seconds
+Executing: ./planner.out map2.txt 3 1.6239,3.1066,3.1683 1.22178,5.49996,2.787 2 myOutput.txt
+Path found: 1000 20 69 16 663 3 1001 
+Cost of PRM : 10.0985
+Nodes : 1001
+Done
+Time taken: 1.955585296 seconds
+Executing: ./planner.out map2.txt 3 0.477944,0.781837,1.15551 0.133742,2.78184,1.31922 2 myOutput.txt
+Path found: 1000 38 411 26 141 1001 
+Cost of PRM : 8.05521
+Nodes : 1001
+Done
+Time taken: 1.514007617 seconds
+Executing: ./planner.out map2.txt 3 1.82837,1.21126,0.813401 1.73168,1.86299,4.71034 2 myOutput.txt
+Path found: 1000 965 3 1001 
+Cost of PRM : 3.15917
+Nodes : 1001
+Done
+Time taken: 1.896907148 seconds
+Executing: ./planner.out map2.txt 3 0.541067,0.79531,4.17564 0.410298,0.941807,5.21556 2 myOutput.txt
+Path found: 1000 938 1001 
+Cost of PRM : 1.25943
+Nodes : 1001
+Done
+Time taken: 1.845823289 seconds
+Executing: ./planner.out map2.txt 3 0.723748,2.01921,0.583081 0.849157,5.99711,0.49605 2 myOutput.txt
+Taking more nodes 1000
+Taking more nodes 1300
+Path found: 1600 1056 38 1337 13 1601 
+Cost of PRM : 5.41695
+Nodes : 1601
+Done
+Time taken: 5.222455602 seconds
+All commands executed successfully.
