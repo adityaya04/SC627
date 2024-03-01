@@ -1,0 +1,24 @@
+{
+    "python.autoComplete.extraPaths": [
+        "/home/adityaya/gensus/robotic_arm/ws/install/arm_sim/lib/python3.8/site-packages",
+        "/home/adityaya/internship/ws/install/transform/lib/python3.8/site-packages",
+        "/home/adityaya/internship/ws/install/carla_sim/lib/python3.8/site-packages",
+        "/home/adityaya/internship/ws/install/perception/lib/python3.8/site-packages",
+        "/home/adityaya/internship/ws/install/occupancy_grid/lib/python3.8/site-packages",
+        "/home/adityaya/internship/ws/install/localisation/lib/python3.8/site-packages",
+        "/home/adityaya/internship/ws/install/control/lib/python3.8/site-packages",
+        "/home/adityaya/loopway/localise/ws/install/fusion/lib/python3.8/site-packages",
+        "/opt/ros/foxy/lib/python3.8/site-packages"
+    ],
+    "python.analysis.extraPaths": [
+        "/home/adityaya/gensus/robotic_arm/ws/install/arm_sim/lib/python3.8/site-packages",
+        "/home/adityaya/internship/ws/install/transform/lib/python3.8/site-packages",
+        "/home/adityaya/internship/ws/install/carla_sim/lib/python3.8/site-packages",
+        "/home/adityaya/internship/ws/install/perception/lib/python3.8/site-packages",
+        "/home/adityaya/internship/ws/install/occupancy_grid/lib/python3.8/site-packages",
+        "/home/adityaya/internship/ws/install/localisation/lib/python3.8/site-packages",
+        "/home/adityaya/internship/ws/install/control/lib/python3.8/site-packages",
+        "/home/adityaya/loopway/localise/ws/install/fusion/lib/python3.8/site-packages",
+        "/opt/ros/foxy/lib/python3.8/site-packages"
+    ]
+}

@@ -1,0 +1,64 @@
+[8.440s] DEBUG:colcon:Command line arguments: ['/usr/bin/colcon', 'list', '-p', '--base-paths', '/home/adityaya/iitb/SC627/noetic/Assignment2/ws']
+[8.440s] DEBUG:colcon:Parsed command line arguments: Namespace(allow_overriding=[], base_paths=['/home/adityaya/iitb/SC627/noetic/Assignment2/ws'], build_base='build', ignore_user_meta=False, log_base=None, log_level=None, main=<bound method ListVerb.main of <colcon_package_information.verb.list.ListVerb object at 0x7fc6d1c7a2e0>>, metas=['./colcon.meta'], names_only=False, packages_above=None, packages_above_and_dependencies=None, packages_above_depth=None, packages_end=None, packages_ignore=None, packages_ignore_regex=None, packages_select=None, packages_select_build_failed=False, packages_select_by_dep=None, packages_select_regex=None, packages_select_test_failures=False, packages_skip=None, packages_skip_build_finished=False, packages_skip_by_dep=None, packages_skip_regex=None, packages_skip_test_passed=False, packages_skip_up_to=None, packages_start=None, packages_up_to=None, packages_up_to_regex=None, paths=None, paths_only=True, topological_graph=False, topological_graph_density=False, topological_graph_dot=False, topological_graph_dot_cluster=False, topological_graph_dot_include_skipped=False, topological_graph_legend=False, topological_order=False, verb_extension=<colcon_package_information.verb.list.ListVerb object at 0x7fc6d1c7a2e0>, verb_name='list', verb_parser=<colcon_defaults.argument_parser.defaults.DefaultArgumentsDecorator object at 0x7fc6d18161f0>)
+[8.873s] Level 1:colcon.colcon_core.package_discovery:discover_packages(colcon_meta) check parameters
+[8.873s] Level 1:colcon.colcon_core.package_discovery:discover_packages(recursive) check parameters
+[8.873s] Level 1:colcon.colcon_core.package_discovery:discover_packages(ignore) check parameters
+[8.874s] Level 1:colcon.colcon_core.package_discovery:discover_packages(path) check parameters
+[8.874s] Level 1:colcon.colcon_core.package_discovery:discover_packages(recursive) discover
+[8.874s] INFO:colcon.colcon_core.package_discovery:Crawling recursively for packages in '/home/adityaya/iitb/SC627/noetic/Assignment2/ws'
+[8.874s] Level 1:colcon.colcon_core.package_identification:_identify(/home/adityaya/iitb/SC627/noetic/Assignment2/ws) by extensions ['ignore', 'ignore_ament_install']
+[8.874s] Level 1:colcon.colcon_core.package_identification:_identify(/home/adityaya/iitb/SC627/noetic/Assignment2/ws) by extension 'ignore'
+[8.874s] Level 1:colcon.colcon_core.package_identification:_identify(/home/adityaya/iitb/SC627/noetic/Assignment2/ws) by extension 'ignore_ament_install'
+[8.874s] Level 1:colcon.colcon_core.package_identification:_identify(/home/adityaya/iitb/SC627/noetic/Assignment2/ws) by extensions ['colcon_pkg']
+[8.874s] Level 1:colcon.colcon_core.package_identification:_identify(/home/adityaya/iitb/SC627/noetic/Assignment2/ws) by extension 'colcon_pkg'
+[8.874s] Level 1:colcon.colcon_core.package_identification:_identify(/home/adityaya/iitb/SC627/noetic/Assignment2/ws) by extensions ['colcon_meta']
+[8.874s] Level 1:colcon.colcon_core.package_identification:_identify(/home/adityaya/iitb/SC627/noetic/Assignment2/ws) by extension 'colcon_meta'
+[8.874s] Level 1:colcon.colcon_core.package_identification:_identify(/home/adityaya/iitb/SC627/noetic/Assignment2/ws) by extensions ['ros']
+[8.874s] Level 1:colcon.colcon_core.package_identification:_identify(/home/adityaya/iitb/SC627/noetic/Assignment2/ws) by extension 'ros'
+[8.894s] Level 1:colcon.colcon_core.package_identification:_identify(/home/adityaya/iitb/SC627/noetic/Assignment2/ws) by extensions ['cmake', 'python']
+[8.894s] Level 1:colcon.colcon_core.package_identification:_identify(/home/adityaya/iitb/SC627/noetic/Assignment2/ws) by extension 'cmake'
+[8.894s] Level 1:colcon.colcon_core.package_identification:_identify(/home/adityaya/iitb/SC627/noetic/Assignment2/ws) by extension 'python'
+[8.894s] Level 1:colcon.colcon_core.package_identification:_identify(/home/adityaya/iitb/SC627/noetic/Assignment2/ws) by extensions ['python_setup_py']
+[8.894s] Level 1:colcon.colcon_core.package_identification:_identify(/home/adityaya/iitb/SC627/noetic/Assignment2/ws) by extension 'python_setup_py'
+[8.895s] Level 1:colcon.colcon_core.package_identification:_identify(/home/adityaya/iitb/SC627/noetic/Assignment2/ws/build) by extensions ['ignore', 'ignore_ament_install']
+[8.895s] Level 1:colcon.colcon_core.package_identification:_identify(/home/adityaya/iitb/SC627/noetic/Assignment2/ws/build) by extension 'ignore'
+[8.895s] Level 1:colcon.colcon_core.package_identification:_identify(/home/adityaya/iitb/SC627/noetic/Assignment2/ws/build) by extension 'ignore_ament_install'
+[8.895s] Level 1:colcon.colcon_core.package_identification:_identify(/home/adityaya/iitb/SC627/noetic/Assignment2/ws/build) by extensions ['colcon_pkg']
+[8.895s] Level 1:colcon.colcon_core.package_identification:_identify(/home/adityaya/iitb/SC627/noetic/Assignment2/ws/build) by extension 'colcon_pkg'
+[8.895s] Level 1:colcon.colcon_core.package_identification:_identify(/home/adityaya/iitb/SC627/noetic/Assignment2/ws/build) by extensions ['colcon_meta']
+[8.895s] Level 1:colcon.colcon_core.package_identification:_identify(/home/adityaya/iitb/SC627/noetic/Assignment2/ws/build) by extension 'colcon_meta'
+[8.895s] Level 1:colcon.colcon_core.package_identification:_identify(/home/adityaya/iitb/SC627/noetic/Assignment2/ws/build) by extensions ['ros']
+[8.895s] Level 1:colcon.colcon_core.package_identification:_identify(/home/adityaya/iitb/SC627/noetic/Assignment2/ws/build) by extension 'ros'
+[8.895s] Level 1:colcon.colcon_core.package_identification:_identify(/home/adityaya/iitb/SC627/noetic/Assignment2/ws/build) ignored
+[8.895s] Level 1:colcon.colcon_core.package_identification:_identify(/home/adityaya/iitb/SC627/noetic/Assignment2/ws/devel) by extensions ['ignore', 'ignore_ament_install']
+[8.896s] Level 1:colcon.colcon_core.package_identification:_identify(/home/adityaya/iitb/SC627/noetic/Assignment2/ws/devel) by extension 'ignore'
+[8.896s] Level 1:colcon.colcon_core.package_identification:_identify(/home/adityaya/iitb/SC627/noetic/Assignment2/ws/devel) by extension 'ignore_ament_install'
+[8.896s] Level 1:colcon.colcon_core.package_identification:_identify(/home/adityaya/iitb/SC627/noetic/Assignment2/ws/devel) ignored
+[8.896s] Level 1:colcon.colcon_core.package_identification:_identify(/home/adityaya/iitb/SC627/noetic/Assignment2/ws/log) by extensions ['ignore', 'ignore_ament_install']
+[8.896s] Level 1:colcon.colcon_core.package_identification:_identify(/home/adityaya/iitb/SC627/noetic/Assignment2/ws/log) by extension 'ignore'
+[8.896s] Level 1:colcon.colcon_core.package_identification:_identify(/home/adityaya/iitb/SC627/noetic/Assignment2/ws/log) ignored
+[8.896s] Level 1:colcon.colcon_core.package_identification:_identify(/home/adityaya/iitb/SC627/noetic/Assignment2/ws/src) by extensions ['ignore', 'ignore_ament_install']
+[8.897s] Level 1:colcon.colcon_core.package_identification:_identify(/home/adityaya/iitb/SC627/noetic/Assignment2/ws/src) by extension 'ignore'
+[8.897s] Level 1:colcon.colcon_core.package_identification:_identify(/home/adityaya/iitb/SC627/noetic/Assignment2/ws/src) by extension 'ignore_ament_install'
+[8.897s] Level 1:colcon.colcon_core.package_identification:_identify(/home/adityaya/iitb/SC627/noetic/Assignment2/ws/src) by extensions ['colcon_pkg']
+[8.897s] Level 1:colcon.colcon_core.package_identification:_identify(/home/adityaya/iitb/SC627/noetic/Assignment2/ws/src) by extension 'colcon_pkg'
+[8.897s] Level 1:colcon.colcon_core.package_identification:_identify(/home/adityaya/iitb/SC627/noetic/Assignment2/ws/src) by extensions ['colcon_meta']
+[8.897s] Level 1:colcon.colcon_core.package_identification:_identify(/home/adityaya/iitb/SC627/noetic/Assignment2/ws/src) by extension 'colcon_meta'
+[8.897s] Level 1:colcon.colcon_core.package_identification:_identify(/home/adityaya/iitb/SC627/noetic/Assignment2/ws/src) by extensions ['ros']
+[8.897s] Level 1:colcon.colcon_core.package_identification:_identify(/home/adityaya/iitb/SC627/noetic/Assignment2/ws/src) by extension 'ros'
+[8.897s] Level 1:colcon.colcon_core.package_identification:_identify(/home/adityaya/iitb/SC627/noetic/Assignment2/ws/src) by extensions ['cmake', 'python']
+[8.897s] Level 1:colcon.colcon_core.package_identification:_identify(/home/adityaya/iitb/SC627/noetic/Assignment2/ws/src) by extension 'cmake'
+[8.897s] Level 1:colcon.colcon_core.package_identification:_identify(/home/adityaya/iitb/SC627/noetic/Assignment2/ws/src) by extension 'python'
+[8.897s] Level 1:colcon.colcon_core.package_identification:_identify(/home/adityaya/iitb/SC627/noetic/Assignment2/ws/src) by extensions ['python_setup_py']
+[8.897s] Level 1:colcon.colcon_core.package_identification:_identify(/home/adityaya/iitb/SC627/noetic/Assignment2/ws/src) by extension 'python_setup_py'
+[8.897s] Level 1:colcon.colcon_core.package_identification:_identify(/home/adityaya/iitb/SC627/noetic/Assignment2/ws/src/assignment2) by extensions ['ignore', 'ignore_ament_install']
+[8.898s] Level 1:colcon.colcon_core.package_identification:_identify(/home/adityaya/iitb/SC627/noetic/Assignment2/ws/src/assignment2) by extension 'ignore'
+[8.898s] Level 1:colcon.colcon_core.package_identification:_identify(/home/adityaya/iitb/SC627/noetic/Assignment2/ws/src/assignment2) by extension 'ignore_ament_install'
+[8.898s] Level 1:colcon.colcon_core.package_identification:_identify(/home/adityaya/iitb/SC627/noetic/Assignment2/ws/src/assignment2) by extensions ['colcon_pkg']
+[8.898s] Level 1:colcon.colcon_core.package_identification:_identify(/home/adityaya/iitb/SC627/noetic/Assignment2/ws/src/assignment2) by extension 'colcon_pkg'
+[8.898s] Level 1:colcon.colcon_core.package_identification:_identify(/home/adityaya/iitb/SC627/noetic/Assignment2/ws/src/assignment2) by extensions ['colcon_meta']
+[8.898s] Level 1:colcon.colcon_core.package_identification:_identify(/home/adityaya/iitb/SC627/noetic/Assignment2/ws/src/assignment2) by extension 'colcon_meta'
+[8.898s] Level 1:colcon.colcon_core.package_identification:_identify(/home/adityaya/iitb/SC627/noetic/Assignment2/ws/src/assignment2) by extensions ['ros']
+[8.898s] Level 1:colcon.colcon_core.package_identification:_identify(/home/adityaya/iitb/SC627/noetic/Assignment2/ws/src/assignment2) by extension 'ros'
+[8.913s] DEBUG:colcon.colcon_core.package_identification:Package '/home/adityaya/iitb/SC627/noetic/Assignment2/ws/src/assignment2' with type 'ros.catkin' and name 'assignment2'
+[8.913s] Level 1:colcon.colcon_core.package_discovery:discover_packages(recursive) using defaults
