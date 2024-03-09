@@ -9,7 +9,7 @@ import numpy as np
 from numpy import pi as PI
 import math
 
-EPSILON_theta = 0.05
+EPSILON_theta = PI/9
 EPSILON_d = 0.05
 d_star = 0.8
 
@@ -35,7 +35,7 @@ class Planner:
         rospy.Subscriber('/scan', LaserScan, self.laser_callback)
         rospy.Subscriber('/odom', Odometry, self.odom_callback)
         self.velocity_publisher = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
-        self.rate = rospy.Rate(30)  # 10 Hz
+        self.rate = rospy.Rate(60)  # 10 Hz
         self.move_cmd = Twist()
         self.x_goal = x 
         self.y_goal = y
@@ -61,19 +61,19 @@ class Planner:
         delta = (theta - self.psi + PI) % (2*PI) - PI
         d = (self.x_goal - self.x)**2 + (self.y_goal - self.y)**2
         # print(delta)
-        print(np.linalg.norm(self.v_attract), np.linalg.norm(self.v_repel))
+        # print(np.linalg.norm(self.v_attract), np.linalg.norm(self.v_repel))
 
         if delta > EPSILON_theta :
-            self.move_cmd.angular.z = 1
+            self.move_cmd.angular.z = 0.6
             self.move_cmd.linear.x = 0
             self.move_cmd.linear.y = 0
         elif delta < -EPSILON_theta :
-            self.move_cmd.angular.z = -1
+            self.move_cmd.angular.z = -0.6
             self.move_cmd.linear.x = 0
             self.move_cmd.linear.y = 0
         else :
-            self.move_cmd.angular.z = 0
-            self.move_cmd.linear.x = 1 #min(math.cos(delta), math.cos(delta)) 
+            self.move_cmd.angular.z = delta * 0.15
+            self.move_cmd.linear.x = min(0.5 * 500 / (np.linalg.norm(Vf)), 0.6)#min(math.cos(delta), math.cos(delta)) 
             self.move_cmd.linear.y = 0 #min(math.sin(delta), math.sin(delta)) 
 
         if math.sqrt(d) < EPSILON_d :
@@ -94,9 +94,12 @@ class Planner:
         N = len(scan)
         count = 0
         x_r, y_r = 0.0, 0.0
+        real_min = 1
         for i in range(N):
-            if scan[i] < d_star : #and scan[i] > 0.1 :
-                repulsion = 1 / scan[i]
+            if scan[i] < d_star and scan[i] > 0.12 :
+                if scan[i] < real_min :
+                    real_min = scan[i]
+                repulsion = 2 / scan[i]**2
                 # repulsion = (1/d_star - 1/scan[i]) * (1 / scan[i]**2)
                 x_r -= repulsion * math.cos(angle_min + psi + step*i)
                 y_r -= repulsion * math.sin(angle_min + psi + step*i)
@@ -109,7 +112,9 @@ class Planner:
             self.v_repel = np.array([x_r, y_r])
 
         d = (self.x_goal - self.x)**2 + (self.y_goal - self.y)**2
-        if d < scan_data.range_min ** 2 :
+        # print(np.sqrt(d), real_min, scan_data.range_min)
+        print(psi)
+        if d < real_min ** 2 :
             self.v_repel = np.zeros(2)
         if d < 0.01 :
             self.v_repel = np.zeros(2)
