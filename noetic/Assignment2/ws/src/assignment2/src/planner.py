@@ -9,9 +9,12 @@ import numpy as np
 from numpy import pi as PI
 import math
 
-EPSILON_theta = PI/9
+EPSILON_theta = 0.05
 EPSILON_d = 0.05
-d_star = 0.8
+d_star_o = 0.8
+d_star_g = 1.5
+Ka = 100
+Kr = 0.8
 
 def quat_to_eul(q):
     x, y, z, w = q.x, q.y, q.z, q.w
@@ -61,7 +64,8 @@ class Planner:
         delta = (theta - self.psi + PI) % (2*PI) - PI
         d = (self.x_goal - self.x)**2 + (self.y_goal - self.y)**2
         # print(delta)
-        # print(np.linalg.norm(self.v_attract), np.linalg.norm(self.v_repel))
+        # print(theta)
+        print(np.linalg.norm(self.v_attract), np.linalg.norm(self.v_repel))
 
         if delta > EPSILON_theta :
             self.move_cmd.angular.z = 0.6
@@ -82,8 +86,13 @@ class Planner:
             self.move_cmd.linear.y = 0
 
     def generate_attraction(self):
-        self.v_attract[0] = (self.x_goal - self.x) * 100
-        self.v_attract[1] = (self.y_goal - self.y) * 100
+        d = math.sqrt((self.x_goal - self.x)**2 + (self.y_goal - self.y)**2)
+        v_attract = np.zeros(2)
+        v_attract[0] = (self.x_goal - self.x) * Ka
+        v_attract[1] = (self.y_goal - self.y) * Ka
+        if d > d_star_g :
+            v_attract = v_attract * d_star_g / d
+        self.v_attract = v_attract 
 
     def generate_repulsion(self):
         scan_data = self.scan_data
@@ -94,13 +103,13 @@ class Planner:
         N = len(scan)
         count = 0
         x_r, y_r = 0.0, 0.0
-        real_min = 1
+        real_min = 1000
         for i in range(N):
-            if scan[i] < d_star and scan[i] > 0.12 :
+            d = scan[i] - 0.12
+            if d < d_star_o and scan[i] > 0.12 :
                 if scan[i] < real_min :
-                    real_min = scan[i]
-                repulsion = 2 / scan[i]**2
-                # repulsion = (1/d_star - 1/scan[i]) * (1 / scan[i]**2)
+                    real_min = scan[i]      
+                repulsion = Kr * ((1/d) - (1/d_star_o)) * (1 / d**2)
                 x_r -= repulsion * math.cos(angle_min + psi + step*i)
                 y_r -= repulsion * math.sin(angle_min + psi + step*i)
             else :
@@ -113,9 +122,9 @@ class Planner:
 
         d = (self.x_goal - self.x)**2 + (self.y_goal - self.y)**2
         # print(np.sqrt(d), real_min, scan_data.range_min)
-        print(psi)
         if d < real_min ** 2 :
             self.v_repel = np.zeros(2)
+        
         if d < 0.01 :
             self.v_repel = np.zeros(2)
 
