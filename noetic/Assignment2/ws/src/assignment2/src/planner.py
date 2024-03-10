@@ -13,13 +13,18 @@ EPSILON_theta = 0.15
 EPSILON_d = 0.05
 d_star_o = 1
 d_star_g = 1.5
-Ka = 100
+Ka = 400
 Kr = 1
 Kp = 5
 Kd = 5
 max_w = 2.5
 max_v = 0.22
-STEP_THETA = PI/10
+N_NBRS = 40
+R_NBR = 0.1
+STEP_THETA = 2 * PI/N_NBRS
+
+def wrap_angle(psi):
+    return (psi + PI) % (2 * PI) - PI
 
 def quat_to_eul(q):
     x, y, z, w = q.x, q.y, q.z, q.w
@@ -55,7 +60,7 @@ class Planner:
         self.v_attract = np.zeros(2)
         self.v_repel = np.zeros(2)
         self.last_delta = 0
-        self.nbr_potentials = np.zeros(11)
+        self.nbr_potentials = np.zeros(N_NBRS)
 
     def odom_callback(self, msg):
         self.x = msg.pose.pose.position.x
@@ -67,16 +72,14 @@ class Planner:
         self.scan_data = scan_msg
 
     def controller(self):
-        Vf = self.v_attract + self.v_repel
-        theta = math.atan2(Vf[1], Vf[0])
-        delta = (theta - self.psi + PI) % (2*PI) - PI
+        theta = wrap_angle(self.psi + STEP_THETA * np.argmin(self.nbr_potentials))
+        print(np.argmin(self.nbr_potentials))
+        delta = wrap_angle(theta - self.psi)
         d = (self.x_goal - self.x)**2 + (self.y_goal - self.y)**2
-        # print(delta)
-        # print(theta)
-        print(np.linalg.norm(self.v_attract), np.linalg.norm(self.v_repel))
         steer = Kp * delta + Kd * (delta - self.last_delta)
         steer = np.clip(steer,-max_w, max_w)
         # print(steer)
+        # print(theta)
         self.last_delta = delta
         if delta > EPSILON_theta :
             self.move_cmd.angular.z = steer
@@ -88,7 +91,7 @@ class Planner:
             self.move_cmd.linear.y = 0
         else :
             self.move_cmd.angular.z = delta * 0.15
-            self.move_cmd.linear.x = min(0.5 * 200 / (np.linalg.norm(Vf)), max_v)#min(math.cos(delta), math.cos(delta)) 
+            self.move_cmd.linear.x = max_v
             self.move_cmd.linear.y = 0 #min(math.sin(delta), math.sin(delta)) 
 
         if math.sqrt(d) < EPSILON_d :
@@ -97,13 +100,12 @@ class Planner:
             self.move_cmd.linear.y = 0
 
     def generate_attraction(self):
-        d = math.sqrt((self.x_goal - self.x)**2 + (self.y_goal - self.y)**2)
-        v_attract = np.zeros(2)
-        v_attract[0] = (self.x_goal - self.x) * Ka
-        v_attract[1] = (self.y_goal - self.y) * Ka
-        if d > d_star_g :
-            v_attract = v_attract * d_star_g / d
-        self.v_attract = v_attract 
+        for i in range(N_NBRS):
+            alpha = self.psi + i * STEP_THETA
+            x,y = self.x + R_NBR * math.cos(alpha), self.y + R_NBR * math.sin(alpha)
+            u_a = ((self.x_goal - x)**2 + (self.y_goal - y)**2) * Ka
+            self.nbr_potentials[i] = u_a
+        
 
     def generate_repulsion(self):
         scan_data = self.scan_data
@@ -118,29 +120,23 @@ class Planner:
         for i in range(N):
             d = scan[i] - 0.12
             if d < d_star_o and scan[i] > 0.12 :
-                if scan[i] < real_min :
-                    real_min = scan[i]      
-                repulsion = Kr * ((1/d) - (1/d_star_o)) * (1 / d**2)
-                x_r -= repulsion * math.cos(angle_min + psi + step*i)
-                y_r -= repulsion * math.sin(angle_min + psi + step*i)
+                beta = wrap_angle(angle_min + psi + step * i)
+                for j in range(N_NBRS):
+                    theta = wrap_angle(psi + STEP_THETA * j)
+                    alpha = wrap_angle(beta - theta)
+                    l = math.sqrt(d**2 + R_NBR**2 - 2 * d * R_NBR * math.cos(alpha))
+                    repulsion = Kr * ((1/l) - (1/d_star_o)) **2
+                    self.nbr_potentials[j] += repulsion
             else :
                 count += 1
         
         if count == 360 :
-            self.v_repel = np.zeros(2)
-        else :
-            self.v_repel = np.array([x_r, y_r])
-
-        d = (self.x_goal - self.x)**2 + (self.y_goal - self.y)**2
-        # print(np.sqrt(d), real_min, scan_data.range_min)
-        if d < real_min ** 2 :
-            self.v_repel = np.zeros(2)
-        
-        if d < 0.01 :
-            self.v_repel = np.zeros(2)
+            return
 
     def planner(self):
         if self.scan_data is None :
+            return
+        if self.x is None :
             return
         self.generate_attraction()
         self.generate_repulsion()
