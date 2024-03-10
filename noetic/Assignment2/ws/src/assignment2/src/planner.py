@@ -9,16 +9,17 @@ import numpy as np
 from numpy import pi as PI
 import math
 
-EPSILON_theta = 0.155
+EPSILON_theta = 0.15
 EPSILON_d = 0.05
-d_star_o = 3
+d_star_o = 1
 d_star_g = 1.5
 Ka = 100
-Kr = 4
-Kp = 8
-Kd = 15
+Kr = 1
+Kp = 5
+Kd = 5
 max_w = 2.5
 max_v = 0.22
+STEP_THETA = PI/10
 
 def quat_to_eul(q):
     x, y, z, w = q.x, q.y, q.z, q.w
@@ -54,6 +55,7 @@ class Planner:
         self.v_attract = np.zeros(2)
         self.v_repel = np.zeros(2)
         self.last_delta = 0
+        self.nbr_potentials = np.zeros(11)
 
     def odom_callback(self, msg):
         self.x = msg.pose.pose.position.x
