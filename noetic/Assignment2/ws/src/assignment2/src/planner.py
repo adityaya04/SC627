@@ -13,7 +13,7 @@ EPSILON_theta = 0.15
 EPSILON_d = 0.05
 d_star_o = 1
 d_star_g = 1.5
-Ka = 400
+Ka = 1050
 Kr = 1
 Kp = 5
 Kd = 5
@@ -42,13 +42,13 @@ def quat_to_eul(q):
     t4 = +1.0 - 2.0 * (y * y + z * z)
     yaw = math.atan2(t3, t4)
     return roll, pitch, yaw
-
+bot_number = 8
 class Planner:
     def __init__(self, x, y):
         rospy.init_node('dynamic_obstacle_avoidance')
-        rospy.Subscriber('/scan', LaserScan, self.laser_callback)
-        rospy.Subscriber('/odom', Odometry, self.odom_callback)
-        self.velocity_publisher = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
+        rospy.Subscriber(f'/tb3_{bot_number}/scan', LaserScan, self.laser_callback)
+        rospy.Subscriber(f'/tb3_{bot_number}/odom', Odometry, self.odom_callback)
+        self.velocity_publisher = rospy.Publisher(f'/tb3_{bot_number}/cmd_vel', Twist, queue_size=10)
         self.rate = rospy.Rate(60)  # 10 Hz
         self.move_cmd = Twist()
         self.x_goal = x 
@@ -57,8 +57,6 @@ class Planner:
         self.y = None
         self.psi = None
         self.scan_data = None
-        self.v_attract = np.zeros(2)
-        self.v_repel = np.zeros(2)
         self.last_delta = 0
         self.nbr_potentials = np.zeros(N_NBRS)
 
@@ -75,7 +73,13 @@ class Planner:
         theta = wrap_angle(self.psi + STEP_THETA * np.argmin(self.nbr_potentials))
         print(np.argmin(self.nbr_potentials))
         delta = wrap_angle(theta - self.psi)
-        d = (self.x_goal - self.x)**2 + (self.y_goal - self.y)**2
+        cmd_v = max_v
+        if delta > PI/2 :
+            delta = delta - PI
+            cmd_v = -max_v
+        elif delta < -PI/2 :
+            delta = delta + PI
+            cmd_v = -max_v
         steer = Kp * delta + Kd * (delta - self.last_delta)
         steer = np.clip(steer,-max_w, max_w)
         # print(steer)
@@ -91,9 +95,10 @@ class Planner:
             self.move_cmd.linear.y = 0
         else :
             self.move_cmd.angular.z = delta * 0.15
-            self.move_cmd.linear.x = max_v
+            self.move_cmd.linear.x = cmd_v
             self.move_cmd.linear.y = 0 #min(math.sin(delta), math.sin(delta)) 
 
+        d = (self.x_goal - self.x)**2 + (self.y_goal - self.y)**2
         if math.sqrt(d) < EPSILON_d :
             self.move_cmd.angular.z = 0
             self.move_cmd.linear.x = 0
@@ -118,6 +123,13 @@ class Planner:
         x_r, y_r = 0.0, 0.0
         real_min = 1000
         for i in range(N):
+            if scan[i] > 0.12 :
+                if scan[i] < real_min :
+                    real_min = scan[i]
+        goal_dist = ((self.x_goal - self.x)**2 + (self.y_goal - self.y)**2)
+        if goal_dist < real_min ** 2 :
+            return
+        for i in range(N):
             d = scan[i] - 0.12
             if d < d_star_o and scan[i] > 0.12 :
                 beta = wrap_angle(angle_min + psi + step * i)
@@ -125,7 +137,7 @@ class Planner:
                     theta = wrap_angle(psi + STEP_THETA * j)
                     alpha = wrap_angle(beta - theta)
                     l = math.sqrt(d**2 + R_NBR**2 - 2 * d * R_NBR * math.cos(alpha))
-                    repulsion = Kr * ((1/l) - (1/d_star_o)) **2
+                    repulsion = Kr * ((1/l) - (1/d_star_o)) **4
                     self.nbr_potentials[j] += repulsion
             else :
                 count += 1

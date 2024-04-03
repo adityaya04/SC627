@@ -9,12 +9,22 @@ import numpy as np
 from numpy import pi as PI
 import math
 
-EPSILON_theta = 0.05
+EPSILON_theta = 0.15
 EPSILON_d = 0.05
-d_star_o = 10
+d_star_o = 1
 d_star_g = 1.5
-Ka = 100
-Kr = 0.8
+Ka = 1050
+Kr = 1
+Kp = 5
+Kd = 5
+max_w = 2.5
+max_v = 0.22
+N_NBRS = 40
+R_NBR = 0.1
+STEP_THETA = 2 * PI/N_NBRS
+
+def wrap_angle(psi):
+    return (psi + PI) % (2 * PI) - PI
 
 def quat_to_eul(q):
     x, y, z, w = q.x, q.y, q.z, q.w
@@ -26,18 +36,19 @@ def quat_to_eul(q):
     t2 = +1.0 if t2 > +1.0 else t2
     t2 = -1.0 if t2 < -1.0 else t2
     pitch = math.asin(t2)
+    
 
     t3 = +2.0 * (w * z + x * y)
     t4 = +1.0 - 2.0 * (y * y + z * z)
     yaw = math.atan2(t3, t4)
     return roll, pitch, yaw
-
+bot_number = 7
 class Planner:
     def __init__(self, x, y):
         rospy.init_node('dynamic_obstacle_avoidance')
-        rospy.Subscriber('/scan', LaserScan, self.laser_callback)
-        rospy.Subscriber('/odom', Odometry, self.odom_callback)
-        self.velocity_publisher = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
+        rospy.Subscriber(f'/tb3_{bot_number}/scan', LaserScan, self.laser_callback)
+        rospy.Subscriber(f'/tb3_{bot_number}/odom', Odometry, self.odom_callback)
+        self.velocity_publisher = rospy.Publisher(f'/tb3_{bot_number}/cmd_vel', Twist, queue_size=10)
         self.rate = rospy.Rate(60)  # 10 Hz
         self.move_cmd = Twist()
         self.x_goal = x 
@@ -46,11 +57,8 @@ class Planner:
         self.y = None
         self.psi = None
         self.scan_data = None
-        self.v_attract = np.zeros(2)
-        self.v_repel = np.zeros(2)
-        self.last_scan = None
-        self.last_scan_time = rospy.Time.now()
-        self.last_obs_position = np.zeros(2)
+        self.last_delta = 0
+        self.nbr_potentials = np.zeros(N_NBRS)
 
     def odom_callback(self, msg):
         self.x = msg.pose.pose.position.x
@@ -59,92 +67,50 @@ class Planner:
         _, _, self.psi = quat_to_eul(quat)
 
     def laser_callback(self, scan_msg):
-        if scan_msg is None :
-            return
-        scan_data = scan_msg
-        psi = self.psi
-        if psi is None :
-            return
-        angle_min = scan_data.angle_min
-        step = scan_data.angle_increment
-        scan = scan_data.ranges
-        N = len(scan)
-        count = 0
-        x_r, y_r = 0.0, 0.0
-        real_min = 1000
-
-        current_time = rospy.Time.now()
-
-        n = 0
-        pos = np.zeros(2)
-        # Calculate velocity for each obstacle
-        for i in range(N):
-            d = scan[i] #- 0.12
-            if d < d_star_o and scan[i] > 0.12 :
-                if scan[i] < real_min :
-                    real_min = scan[i]      
-                dx = math.cos(angle_min + psi + step*i)
-                dy = math.sin(angle_min + psi + step*i)
-                pos += d * np.array([dx, dy])
-                n = n + 1
-                repulsion = Kr * ((1/d) - (1/d_star_o)) * (1 / d**2)
-                x_r -= repulsion * dx
-                y_r -= repulsion * dy
-            else :
-                count += 1
-        if n == 0 :
-            print("no obstacle in range")
-        else :
-            pos /= n        
-        R = np.array([
-            [math.cos(psi), -math.sin(psi)],
-            [math.sin(psi), math.cos(psi)]
-        ])
-        pos = R @ pos + np.array([self.x, self.y])
-        if count == 360 :
-            self.v_repel = np.zeros(2)
-        else :
-            self.v_repel = np.array([x_r, y_r])
-        speed = self.last_obs_position / (current_time - self.last_scan_time).to_sec()
-        print(speed)
-        self.last_scan_time = current_time
-        self.last_obs_position = pos
+        self.scan_data = scan_msg
 
     def controller(self):
-        Vf = self.v_attract + self.v_repel
-        theta = math.atan2(Vf[1], Vf[0])
-        delta = (theta - self.psi + PI) % (2*PI) - PI
-        d = (self.x_goal - self.x)**2 + (self.y_goal - self.y)**2
-        # print(delta)
+        theta = wrap_angle(self.psi + STEP_THETA * np.argmin(self.nbr_potentials))
+        print(np.argmin(self.nbr_potentials))
+        delta = wrap_angle(theta - self.psi)
+        cmd_v = max_v
+        if delta > PI/2 :
+            delta = delta - PI
+            cmd_v = -max_v
+        elif delta < -PI/2 :
+            delta = delta + PI
+            cmd_v = -max_v
+        steer = Kp * delta + Kd * (delta - self.last_delta)
+        steer = np.clip(steer,-max_w, max_w)
+        # print(steer)
         # print(theta)
-        print(np.linalg.norm(self.v_attract), np.linalg.norm(self.v_repel))
-
+        self.last_delta = delta
         if delta > EPSILON_theta :
-            self.move_cmd.angular.z = 0.6
+            self.move_cmd.angular.z = steer
             self.move_cmd.linear.x = 0
             self.move_cmd.linear.y = 0
         elif delta < -EPSILON_theta :
-            self.move_cmd.angular.z = -0.6
+            self.move_cmd.angular.z = steer # - 0.6
             self.move_cmd.linear.x = 0
             self.move_cmd.linear.y = 0
         else :
             self.move_cmd.angular.z = delta * 0.15
-            self.move_cmd.linear.x = min(0.5 * 500 / (np.linalg.norm(Vf)), 0.6)#min(math.cos(delta), math.cos(delta)) 
+            self.move_cmd.linear.x = cmd_v
             self.move_cmd.linear.y = 0 #min(math.sin(delta), math.sin(delta)) 
 
+        d = (self.x_goal - self.x)**2 + (self.y_goal - self.y)**2
         if math.sqrt(d) < EPSILON_d :
             self.move_cmd.angular.z = 0
             self.move_cmd.linear.x = 0
             self.move_cmd.linear.y = 0
 
     def generate_attraction(self):
-        d = math.sqrt((self.x_goal - self.x)**2 + (self.y_goal - self.y)**2)
-        v_attract = np.zeros(2)
-        v_attract[0] = (self.x_goal - self.x) * Ka
-        v_attract[1] = (self.y_goal - self.y) * Ka
-        if d > d_star_g :
-            v_attract = v_attract * d_star_g / d
-        self.v_attract = v_attract 
+        for i in range(N_NBRS):
+            alpha = self.psi + i * STEP_THETA
+            x,y = self.x + R_NBR * math.cos(alpha), self.y + R_NBR * math.sin(alpha)
+            u_a = ((self.x_goal - x)**2 + (self.y_goal - y)**2) * Ka
+            self.nbr_potentials[i] = u_a
+        
 
     def generate_repulsion(self):
         scan_data = self.scan_data
@@ -157,34 +123,36 @@ class Planner:
         x_r, y_r = 0.0, 0.0
         real_min = 1000
         for i in range(N):
+            if scan[i] > 0.12 :
+                if scan[i] < real_min :
+                    real_min = scan[i]
+        goal_dist = ((self.x_goal - self.x)**2 + (self.y_goal - self.y)**2)
+        if goal_dist < real_min ** 2 :
+            return
+        for i in range(N):
             d = scan[i] - 0.12
             if d < d_star_o and scan[i] > 0.12 :
-                if scan[i] < real_min :
-                    real_min = scan[i]      
-                repulsion = Kr * ((1/d) - (1/d_star_o)) * (1 / d**2)
-                x_r -= repulsion * math.cos(angle_min + psi + step*i)
-                y_r -= repulsion * math.sin(angle_min + psi + step*i)
+                beta = wrap_angle(angle_min + psi + step * i)
+                for j in range(N_NBRS):
+                    theta = wrap_angle(psi + STEP_THETA * j)
+                    alpha = wrap_angle(beta - theta)
+                    l = math.sqrt(d**2 + R_NBR**2 - 2 * d * R_NBR * math.cos(alpha))
+                    repulsion = Kr * ((1/l) - (1/d_star_o)) **4
+                    self.nbr_potentials[j] += repulsion
             else :
                 count += 1
         
         if count == 360 :
-            self.v_repel = np.zeros(2)
-        else :
-            self.v_repel = np.array([x_r, y_r])
-
-        d = (self.x_goal - self.x)**2 + (self.y_goal - self.y)**2
-        # print(np.sqrt(d), real_min, scan_data.range_min)
-        if d < real_min ** 2 :
-            self.v_repel = np.zeros(2)
-        
-        if d < 0.01 :
-            self.v_repel = np.zeros(2)
+            return
 
     def planner(self):
         if self.scan_data is None :
             return
-        # self.generate_attraction()
-        # self.generate_repulsion()
+        if self.x is None :
+            return
+        self.generate_attraction()
+        self.generate_repulsion()
+        self.controller()
 
     def run(self):
         while not rospy.is_shutdown():
