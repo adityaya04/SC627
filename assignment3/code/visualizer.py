@@ -1,6 +1,7 @@
 import numpy as np 
 import matplotlib.pyplot as plt 
 from matplotlib.animation import FuncAnimation
+import subprocess
 
 import sys
 
@@ -49,7 +50,7 @@ if __name__ == "__main__":
         sys.exit(1)
     
     x_size, y_size, collision_threshold, robotX, robotY, target_trajectory, costmap = parse_mapfile(sys.argv[1])
-
+    subprocess.run(["./a.out", sys.argv[1]])
     robot_trajectory = parse_robot_trajectory_file('robot_trajectory.txt')
 
     fig, ax = plt.subplots()
@@ -70,7 +71,7 @@ if __name__ == "__main__":
         t = robot_trajectory[frame+1]['t']
         line2.set_data([p['x'] for p in target_trajectory[:t]], [p['y'] for p in target_trajectory[:t]])
         
-        plt.pause((robot_trajectory[frame+1]['t']-robot_trajectory[frame]['t'])/SPEEDUP)
+        # plt.pause((robot_trajectory[frame+1]['t']-robot_trajectory[frame]['t'])/SPEEDUP)
         
         return line1, line2
     

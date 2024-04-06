@@ -53,7 +53,6 @@ static auto compare = [](std::shared_ptr<node> n1, std::shared_ptr<node> n2)
     return n1->f > n2->f;
 };
 
-// Globals
 bool firstCall = true;
 std::unordered_map<int, std::shared_ptr<node>> nodes;
 std::unordered_map<int, int> goals;
@@ -207,15 +206,9 @@ void planner(
 
     int dX[NUMOFDIRS + 1] = {-1, -1, -1,  0,  0,  1, 1, 1, 0};
     int dY[NUMOFDIRS + 1] = {-1,  0,  1, -1,  1, -1, 0, 1, 0};
-    
-    // for now greedily move towards the final target position,
-    // but this is where you can put your planner
 
     int goalposeX = (int) target_traj[target_steps-1];
     int goalposeY = (int) target_traj[target_steps-1+target_steps];
-    // printf("robot: %d %d;\n", robotposeX, robotposeY);
-    // printf("goal: %d %d;\n", goalposeX, goalposeY);
-
 
     prevX = robotposeX;
     prevY = robotposeY;
@@ -230,7 +223,8 @@ void planner(
         {
             gIndex = GETMAPINDEX((int) target_traj[i], (int) target_traj[target_steps + i], x_size, y_size);
             // atleast 1 second will be skipped after execution (ceiling function). so subtract 1 sec from goal times
-            goals[gIndex] = MAX(0, i - 1);
+            // goals[gIndex] = MAX(0, i - 1);
+            goals[gIndex] = MAX(0, i);
 
             if(i > (target_steps/2))
             {
