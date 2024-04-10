@@ -38,17 +38,17 @@ int robot_prev_X, robot_prev_Y;
 bool initialzed = true;
 bool debug_bool = true;
 
-struct node
+struct Node
 {
+    shared_ptr<Node> parent;
     int _index;
-    int _g;
-    int _h;
-    int _f;
     int _time;
-    shared_ptr<node> parent;
+    int _h;
+    int _g;
+    int _f;
 
-    node() : parent(nullptr), _g(inf), _f(inf) {}
-    node(int index, int time, int h) : parent(nullptr), _g(inf), _f(inf)
+    Node() : parent(nullptr), _g(inf), _f(inf) {}
+    Node(int index, int time, int h) : parent(nullptr), _g(inf), _f(inf)
     {
         _index = index;
         _time = time;
@@ -56,15 +56,15 @@ struct node
     }
 };
 
-auto GREATER = [](shared_ptr<node> n1, shared_ptr<node> n2)
+auto GREATER = [](shared_ptr<Node> n1, shared_ptr<Node> n2)
 {
     return (n1->_f > n2->_f);
 };
 
 
-priority_queue<shared_ptr<node>, vector<shared_ptr<node>>, decltype(GREATER)> OPEN(GREATER);
+priority_queue<shared_ptr<Node>, vector<shared_ptr<Node>>, decltype(GREATER)> OPEN(GREATER);
 unordered_set<int> CLOSED;
-unordered_map<int, shared_ptr<node>> nodes;
+unordered_map<int, shared_ptr<Node>> Nodes;
 
 pair<int, int> getXY(int x_size, int index)
 {
@@ -83,7 +83,7 @@ void Dijkstra(
 {
     while(!OPEN.empty())
     {
-        shared_ptr<node> active_node = OPEN.top();
+        shared_ptr<Node> active_node = OPEN.top();
         OPEN.pop();
         if(Heuristic_2d.find(active_node ->_index) != Heuristic_2d.end()) continue; 
         Heuristic_2d[active_node ->_index] = pair<int, int>(active_node ->_g, active_node ->_time); 
@@ -101,15 +101,15 @@ void Dijkstra(
                    y_temp >= 1 && y_temp <= y_size){
                     int cost = (int) map[temp_index];
                     if((cost >= 0) && (cost < collision_thresh)) {
-                        if(nodes.find(temp_index) == nodes.end()){
-                            shared_ptr<node> new_node = make_shared<node>(temp_index, active_node ->_time, 0);
-                            nodes[temp_index] = new_node;
+                        if(Nodes.find(temp_index) == Nodes.end()){
+                            shared_ptr<Node> new_node = make_shared<Node>(temp_index, active_node ->_time, 0);
+                            Nodes[temp_index] = new_node;
                         }
-                        if(nodes[temp_index]->_g > active_node ->_g + cost){
-                            nodes[temp_index]->_g = active_node ->_g + cost;
-                            nodes[temp_index]->_f = nodes[temp_index]->_g + nodes[temp_index]->_h;
-                            nodes[temp_index]->parent = active_node;
-                            OPEN.push(nodes[temp_index]);
+                        if(Nodes[temp_index]->_g > active_node ->_g + cost){
+                            Nodes[temp_index]->_g = active_node ->_g + cost;
+                            Nodes[temp_index]->_f = Nodes[temp_index]->_g + Nodes[temp_index]->_h;
+                            Nodes[temp_index]->parent = active_node;
+                            OPEN.push(Nodes[temp_index]);
                         }
                     }
                }
@@ -130,7 +130,7 @@ void A_star(
     while(!OPEN.empty()){
         int timeElapsed = chrono::duration_cast<chrono::seconds>(chrono::steady_clock::now() - T_starting).count();
         int len_time;
-        shared_ptr<node> active_node = OPEN.top();
+        shared_ptr<Node> active_node = OPEN.top();
         OPEN.pop();
         if(active_node ->_time == 0) len_time = 0;
         else len_time = (int) (log10(active_node ->_time) + 1);
@@ -166,20 +166,20 @@ void A_star(
                    x_temp <= x_size and y_temp <= y_size){
                     int cost = (int) map[temp_index];
                     if((cost >= 0) and (cost < collision_thresh)){
-                        if(nodes.find(hash_key) == nodes.end()){
+                        if(Nodes.find(hash_key) == Nodes.end()){
                             int totalTime = timeElapsed + time;
                             int H = 0;
                             if (Target_nodes.find(temp_index) != Target_nodes.end() and totalTime <= Target_nodes[temp_index])
                                 H = cost*(Target_nodes[temp_index] - totalTime);
                             else H =  Heuristic_2d[temp_index].first + abs(Heuristic_2d[temp_index].second - totalTime);
-                            shared_ptr<node> new_node = make_shared<node>(temp_index, time, H);
-                            nodes[hash_key] = new_node;
+                            shared_ptr<Node> new_node = make_shared<Node>(temp_index, time, H);
+                            Nodes[hash_key] = new_node;
                         }
-                        if(nodes[hash_key]->_g > active_node ->_g + cost){ 
-                            nodes[hash_key]->_g = active_node ->_g + cost;
-                            nodes[hash_key]->_f = nodes[hash_key]->_g + 1.8*nodes[hash_key]->_h; 
-                            nodes[hash_key]->parent = active_node;
-                            OPEN.push(nodes[hash_key]);
+                        if(Nodes[hash_key]->_g > active_node ->_g + cost){ 
+                            Nodes[hash_key]->_g = active_node ->_g + cost;
+                            Nodes[hash_key]->_f = Nodes[hash_key]->_g + 1.8*Nodes[hash_key]->_h; 
+                            Nodes[hash_key]->parent = active_node;
+                            OPEN.push(Nodes[hash_key]);
                         }
                     }
                 }
@@ -215,22 +215,22 @@ void planner(
             goal_idx = GETMAPINDEX((int) target_traj[i], (int) target_traj[target_steps + i], x_size, y_size);
             Target_nodes[goal_idx] = i;
             if(i > (target_steps/2)){
-                shared_ptr<node> temp = make_shared<node>(goal_idx, i, 0);
+                shared_ptr<Node> temp = make_shared<Node>(goal_idx, i, 0);
                 temp ->_g = 0;
                 temp ->_f = temp ->_h;
                 OPEN.push(temp);
-                nodes[goal_idx] = temp;
+                Nodes[goal_idx] = temp;
             }
         }
         Dijkstra(map, collision_thresh, x_size, y_size);
-        nodes.clear();
+        Nodes.clear();
         int index = GETMAPINDEX(robotposeX, robotposeY, x_size, y_size);
         int H = Heuristic_2d[index].first;
-        shared_ptr<node> START = make_shared<node>(index, 0, H);
+        shared_ptr<Node> START = make_shared<Node>(index, 0, H);
         START ->_g = 0;
         START ->_f = START ->_h;
         OPEN.push(START);
-        nodes[index] = START;
+        Nodes[index] = START;
         A_star(map, target_traj, target_steps, x_size, y_size, collision_thresh);
     }
     if(!final_path.empty()){
