@@ -26,43 +26,42 @@ using namespace std;
 #endif
 
 #define NUMOFDIRS 8
-#define INT_MAX INT32_MAX
+#define inf INT32_MAX
 
-bool debug_bool = true;
 int dX[NUMOFDIRS + 1] = {-1, -1, -1,  0,  0,  1, 1, 1, 0};
 int dY[NUMOFDIRS + 1] = {-1,  0,  1, -1,  1, -1, 0, 1, 0};
 
 struct node
 {
-    int mapIndex;
-    int g;
-    int h;
-    int f;
-    int time;
-    std::shared_ptr<node> parent;
+    int _index;
+    int _g;
+    int _h;
+    int _f;
+    int _time;
+    shared_ptr<node> parent;
 
-    node() : parent(nullptr), g(INT_MAX), f(INT_MAX) {}
-    node(int ind, int hVal, int t) : parent(nullptr), g(INT_MAX), f(INT_MAX)
+    node() : parent(nullptr), _g(inf), _f(inf) {}
+    node(int index, int time, int h) : parent(nullptr), _g(inf), _f(inf)
     {
-        mapIndex = ind;
-        h = hVal;
-        time = t;
+        _index = index;
+        _time = time;
+        _h = h;
     }
 };
 
-static auto compare = [](std::shared_ptr<node> n1, std::shared_ptr<node> n2)
+static auto compare = [](shared_ptr<node> n1, shared_ptr<node> n2)
 {
-    return n1->f > n2->f;
+    return n1->_f > n2->_f;
 };
 
-bool firstCall = true;
-std::unordered_map<int, std::shared_ptr<node>> nodes;
-std::unordered_map<int, int> goals;
-std::unordered_map<int, std::pair<int, int>> heuristics;
-std::unordered_set<int> closed;
-std::priority_queue<std::shared_ptr<node>, std::vector<std::shared_ptr<node>>, decltype(compare)> openQueue(compare);
-std::stack<int> actionStack;
-std::chrono::time_point<std::chrono::steady_clock> startTime;
+bool initialized = true;
+unordered_map<int, shared_ptr<node>> nodes;
+unordered_map<int, int> goals;
+unordered_map<int, pair<int, int>> heuristics;
+unordered_set<int> closed;
+priority_queue<shared_ptr<node>, vector<shared_ptr<node>>, decltype(compare)> openQueue(compare);
+stack<int> actionStack;
+chrono::time_point<chrono::steady_clock> startTime;
 
 int prevX, prevY;
 
@@ -75,13 +74,13 @@ static void Dijkstra(
 {
     while(!openQueue.empty())
     {
-        std::shared_ptr<node> s = openQueue.top();
+        shared_ptr<node> s = openQueue.top();
         openQueue.pop();
-        if(heuristics.find(s->mapIndex) != heuristics.end()) continue; // skip repetitions in open list
-        heuristics[s->mapIndex] = std::pair<int, int>(s->g, s->time); // closed list. stores optimal g-vals
+        if(heuristics.find(s->_index) != heuristics.end()) continue; // skip repetitions in open list
+        heuristics[s->_index] = pair<int, int>(s->_g, s->_time); // closed list. stores optimal g-vals
 
-        int rX = (int)(s->mapIndex % x_size) + 1;
-        int rY = (int)(s->mapIndex / x_size) + 1;
+        int rX = (int)(s->_index % x_size) + 1;
+        int rY = (int)(s->_index / x_size) + 1;
 
         for(int dir = 0; dir < NUMOFDIRS; ++dir)
         {
@@ -96,13 +95,13 @@ static void Dijkstra(
                 {
                     if(nodes.find(newIndex) == nodes.end()) // create a new node, if it does not exist
                     {
-                        std::shared_ptr<node> n = std::make_shared<node>(newIndex, 0, s->time);
+                        shared_ptr<node> n = make_shared<node>(newIndex, s->_time, 0);
                         nodes[newIndex] = n;
                     }
-                    if(nodes[newIndex]->g > s->g + cost) // compare g values and cost, update parent if needed
+                    if(nodes[newIndex]->_g > s->_g + cost) // compare g values and cost, update parent if needed
                     {
-                        nodes[newIndex]->g = s->g + cost;
-                        nodes[newIndex]->f = nodes[newIndex]->g + nodes[newIndex]->h;
+                        nodes[newIndex]->_g = s->_g + cost;
+                        nodes[newIndex]->_f = nodes[newIndex]->_g + nodes[newIndex]->_h;
                         nodes[newIndex]->parent = s;
                         openQueue.push(nodes[newIndex]);
                     }
@@ -123,32 +122,32 @@ static void A_star(
 {
     while(!openQueue.empty())
     {
-        int timeElapsed = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now() - startTime).count();
+        int timeElapsed = chrono::duration_cast<chrono::seconds>(chrono::steady_clock::now() - startTime).count();
         int newx, newy, newIndex, digits, newIndexForMap, cost;
-        std::shared_ptr<node> s = openQueue.top();
+        shared_ptr<node> s = openQueue.top();
         openQueue.pop();
-        digits = (s->time == 0) ? 0 : (int)(std::log10(s->time) + 1);
-        newIndexForMap = s->mapIndex * ((int)std::pow(10, digits)) + s->time; // concatenate time value to the end of index for unique key
+        digits = (s->_time == 0) ? 0 : (int)(log10(s->_time) + 1);
+        newIndexForMap = s->_index * ((int)pow(10, digits)) + s->_time; // concatenate time value to the end of index for unique key
         if(closed.find(newIndexForMap) != closed.end()) continue; // skip repetitions in open list
         closed.insert(newIndexForMap);
 
-        int rX = (int)(s->mapIndex % x_size) + 1;
-        int rY = (int)(s->mapIndex / x_size) + 1;
+        int rX = (int)(s->_index % x_size) + 1;
+        int rY = (int)(s->_index / x_size) + 1;
 
 
-        if(goals.find(s->mapIndex) != goals.end() and s->time == (goals[s->mapIndex] - timeElapsed))
+        if(goals.find(s->_index) != goals.end() and s->_time == (goals[s->_index] - timeElapsed))
         {
             // goal reached, add all to action stack and return
             while(s)
             {
-                actionStack.push(s->mapIndex);
+                actionStack.push(s->_index);
                 s = s->parent;
             }
             actionStack.pop(); // remove start node
             return;
         }
         
-        int time = s->time + 1;
+        int time = s->_time + 1;
         if(time > target_steps)
         {
             continue;
@@ -158,8 +157,8 @@ static void A_star(
             newx = rX + dX[dir];
             newy = rY + dY[dir];
             newIndex = (int) GETMAPINDEX(newx, newy, x_size, y_size);
-            digits = (time == 0) ? 0 : (int)(std::log10(time) + 1);
-            newIndexForMap = newIndex * ((int)std::pow(10, digits)) + time; // concatenate time value to the end of index for unique key
+            digits = (time == 0) ? 0 : (int)(log10(time) + 1);
+            newIndexForMap = newIndex * ((int)pow(10, digits)) + time; // concatenate time value to the end of index for unique key
             
             if(newx >= 1 and newx <= x_size and newy >= 1 and newy <= y_size and closed.find(newIndexForMap) == closed.end())
             {
@@ -170,13 +169,13 @@ static void A_star(
                     {
                         int totalTime = timeElapsed + time;
                         int h = (goals.find(newIndex) != goals.end() and totalTime <= goals[newIndex]) ? cost*(goals[newIndex] - totalTime) : heuristics[newIndex].first + abs(heuristics[newIndex].second - totalTime);
-                        std::shared_ptr<node> n = std::make_shared<node>(newIndex, h, time);
+                        shared_ptr<node> n = make_shared<node>(newIndex, time, h);
                         nodes[newIndexForMap] = n;
                     }
-                    if(nodes[newIndexForMap]->g > s->g + cost) // compare g values and cost, update parent if needed
+                    if(nodes[newIndexForMap]->_g > s->_g + cost) // compare g values and cost, update parent if needed
                     {
-                        nodes[newIndexForMap]->g = s->g + cost;
-                        nodes[newIndexForMap]->f = nodes[newIndexForMap]->g + 1.8*nodes[newIndexForMap]->h; // weighted A*
+                        nodes[newIndexForMap]->_g = s->_g + cost;
+                        nodes[newIndexForMap]->_f = nodes[newIndexForMap]->_g + 1.8*nodes[newIndexForMap]->_h; // weighted A*
                         nodes[newIndexForMap]->parent = s;
                         openQueue.push(nodes[newIndexForMap]);
                     }
@@ -208,10 +207,10 @@ void planner(
     prevX = robotposeX;
     prevY = robotposeY;
 
-    if(firstCall) 
+    if(initialized) 
     {
-        startTime = std::chrono::steady_clock::now();
-        firstCall = false;
+        startTime = chrono::steady_clock::now();
+        initialized = false;
 
         int gIndex;
         for(int i = 0; i < target_steps; ++i) 
@@ -222,9 +221,9 @@ void planner(
 
             if(i > (target_steps/2))
             {
-                std::shared_ptr<node> a = std::make_shared<node>(gIndex, 0, i);
-                a->g = 0;
-                a->f = a->h;
+                shared_ptr<node> a = make_shared<node>(gIndex, i, 0);
+                a->_g = 0;
+                a->_f = a->_h;
                 nodes[gIndex] = a;
                 openQueue.push(a);
             }
@@ -235,9 +234,9 @@ void planner(
 
         int index = GETMAPINDEX(robotposeX, robotposeY, x_size, y_size);
         int h = heuristics[index].first;
-        std::shared_ptr<node> b = std::make_shared<node>(index, h, 0);
-        b->g = 0;
-        b->f = b->h;
+        shared_ptr<node> b = make_shared<node>(index, 0, h);
+        b->_g = 0;
+        b->_f = b->_h;
         nodes[index] = b;
         openQueue.push(b);
         A_star(map, target_traj, target_steps, collision_thresh, x_size, y_size);
