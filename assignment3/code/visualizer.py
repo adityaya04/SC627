@@ -75,7 +75,7 @@ if __name__ == "__main__":
         
         return line1, line2
     
-    ani = FuncAnimation(fig, update, frames=len(robot_trajectory)-1, init_func=init, blit=False, interval=1)
+    ani = FuncAnimation(fig, update, frames=len(robot_trajectory)-1, init_func=init, blit=False, interval=50)
 
     plt.legend()
     plt.show()

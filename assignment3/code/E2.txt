@@ -1,0 +1,10 @@
+Map File	Target Caught	Path Cost
+map1.txt	1		2869
+map2.txt	1		1601510
+map3.txt	1		344
+map4.txt	1		381
+map5.txt	1		1258
+map6.txt	1		539
+map7.txt	1		251
+map8.txt	1		431
+map9.txt	1		369

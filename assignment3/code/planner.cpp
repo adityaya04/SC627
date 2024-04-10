@@ -29,6 +29,8 @@ using namespace std;
 #define INT_MAX INT32_MAX
 
 bool debug_bool = true;
+int dX[NUMOFDIRS + 1] = {-1, -1, -1,  0,  0,  1, 1, 1, 0};
+int dY[NUMOFDIRS + 1] = {-1,  0,  1, -1,  1, -1, 0, 1, 0};
 
 struct node
 {
@@ -64,13 +66,11 @@ std::chrono::time_point<std::chrono::steady_clock> startTime;
 
 int prevX, prevY;
 
-static void computeHeuristics(
-        int x_size,
-        int y_size,
-        int dX[],
-        int dY[],
+static void Dijkstra(
         int* map,
-        int collision_thresh
+        int collision_thresh,
+        int x_size,
+        int y_size
         )
 {
     while(!openQueue.empty())
@@ -112,15 +112,13 @@ static void computeHeuristics(
     }
 }
 
-static void computePath(
-        int x_size,
-        int y_size,
-        int dX[],
-        int dY[],
+static void A_star(
         int* map,
-        int collision_thresh,
         int* target_traj,
-        int target_steps
+        int target_steps,
+        int collision_thresh,
+        int x_size,
+        int y_size
         )
 {
     while(!openQueue.empty())
@@ -204,50 +202,45 @@ void planner(
     )   
 {
 
-    int dX[NUMOFDIRS + 1] = {-1, -1, -1,  0,  0,  1, 1, 1, 0};
-    int dY[NUMOFDIRS + 1] = {-1,  0,  1, -1,  1, -1, 0, 1, 0};
-
     int goalposeX = (int) target_traj[target_steps-1];
     int goalposeY = (int) target_traj[target_steps-1+target_steps];
 
     prevX = robotposeX;
     prevY = robotposeY;
 
-    if(firstCall) // init s_start, g(start) = 0, add to the open set, and node map
+    if(firstCall) 
     {
         startTime = std::chrono::steady_clock::now();
         firstCall = false;
 
         int gIndex;
-        for(int i = 0; i < target_steps; ++i) // setup multi-goal map
+        for(int i = 0; i < target_steps; ++i) 
         {
             gIndex = GETMAPINDEX((int) target_traj[i], (int) target_traj[target_steps + i], x_size, y_size);
-            // atleast 1 second will be skipped after execution (ceiling function). so subtract 1 sec from goal times
-            // goals[gIndex] = MAX(0, i - 1);
-            goals[gIndex] = MAX(0, i);
+
+            goals[gIndex] = i;
 
             if(i > (target_steps/2))
             {
-                std::shared_ptr<node> a = std::make_shared<node>(gIndex, 0, MAX(0, i - 1));
+                std::shared_ptr<node> a = std::make_shared<node>(gIndex, 0, i);
                 a->g = 0;
-                a->f = a->g + a->h;
+                a->f = a->h;
                 nodes[gIndex] = a;
                 openQueue.push(a);
             }
         }
 
-        computeHeuristics(x_size, y_size, dX, dY, map, collision_thresh);
+        Dijkstra(map, collision_thresh, x_size, y_size);
         nodes.clear();
 
         int index = GETMAPINDEX(robotposeX, robotposeY, x_size, y_size);
         int h = heuristics[index].first;
         std::shared_ptr<node> b = std::make_shared<node>(index, h, 0);
         b->g = 0;
-        b->f = b->g + b->h;
+        b->f = b->h;
         nodes[index] = b;
         openQueue.push(b);
-        // call compute path
-        computePath(x_size, y_size, dX, dY, map, collision_thresh, target_traj, target_steps);
+        A_star(map, target_traj, target_steps, collision_thresh, x_size, y_size);
     }
     if(!actionStack.empty())
     {
@@ -260,13 +253,5 @@ void planner(
     action_ptr[0] = prevX;
     action_ptr[1] = prevY;
 
-    if(debug_bool){
-        debug_bool = false;
-        // cout << "iter1 " << endl;
-        // for(int i = 0; i < target_steps ; i++){
-        //     cout << target_traj[i] << ',' << target_traj[i + target_steps] << endl;
-        // }
-        // cout << curr_time << endl;
-    }
     return;
 }
