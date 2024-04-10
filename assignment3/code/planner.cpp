@@ -76,8 +76,8 @@ static void Dijkstra(
     {
         shared_ptr<node> s = openQueue.top();
         openQueue.pop();
-        if(heuristics.find(s->_index) != heuristics.end()) continue; // skip repetitions in open list
-        heuristics[s->_index] = pair<int, int>(s->_g, s->_time); // closed list. stores optimal g-vals
+        if(heuristics.find(s->_index) != heuristics.end()) continue; 
+        heuristics[s->_index] = pair<int, int>(s->_g, s->_time); 
 
         int rX = (int)(s->_index % x_size) + 1;
         int rY = (int)(s->_index / x_size) + 1;
@@ -91,14 +91,14 @@ static void Dijkstra(
             if(newx >= 1 and newx <= x_size and newy >= 1 and newy <= y_size and heuristics.find(newIndex) == heuristics.end())
             {
                 int cost = (int) map[newIndex];
-                if((cost >= 0) and (cost < collision_thresh)) // cell is free
+                if((cost >= 0) and (cost < collision_thresh)) 
                 {
-                    if(nodes.find(newIndex) == nodes.end()) // create a new node, if it does not exist
+                    if(nodes.find(newIndex) == nodes.end()) 
                     {
                         shared_ptr<node> n = make_shared<node>(newIndex, s->_time, 0);
                         nodes[newIndex] = n;
                     }
-                    if(nodes[newIndex]->_g > s->_g + cost) // compare g values and cost, update parent if needed
+                    if(nodes[newIndex]->_g > s->_g + cost) 
                     {
                         nodes[newIndex]->_g = s->_g + cost;
                         nodes[newIndex]->_f = nodes[newIndex]->_g + nodes[newIndex]->_h;
@@ -127,55 +127,50 @@ static void A_star(
         shared_ptr<node> s = openQueue.top();
         openQueue.pop();
         digits = (s->_time == 0) ? 0 : (int)(log10(s->_time) + 1);
-        newIndexForMap = s->_index * ((int)pow(10, digits)) + s->_time; // concatenate time value to the end of index for unique key
-        if(closed.find(newIndexForMap) != closed.end()) continue; // skip repetitions in open list
+        newIndexForMap = s->_index * ((int)pow(10, digits)) + s->_time; 
+        if(closed.find(newIndexForMap) != closed.end()) continue; 
         closed.insert(newIndexForMap);
 
         int rX = (int)(s->_index % x_size) + 1;
         int rY = (int)(s->_index / x_size) + 1;
 
 
-        if(goals.find(s->_index) != goals.end() and s->_time == (goals[s->_index] - timeElapsed))
-        {
-            // goal reached, add all to action stack and return
-            while(s)
-            {
+        if(goals.find(s->_index) != goals.end() and s->_time == (goals[s->_index] - timeElapsed)){
+            while(s){
                 actionStack.push(s->_index);
                 s = s->parent;
             }
-            actionStack.pop(); // remove start node
+            actionStack.pop(); 
             return;
         }
         
         int time = s->_time + 1;
-        if(time > target_steps)
-        {
-            continue;
-        }
-        for(int dir = 0; dir < (NUMOFDIRS + 1); ++dir)
-        {
+        if(time > target_steps) continue;
+        
+        for(int dir = 0; dir < (NUMOFDIRS + 1); ++dir){
             newx = rX + dX[dir];
             newy = rY + dY[dir];
             newIndex = (int) GETMAPINDEX(newx, newy, x_size, y_size);
             digits = (time == 0) ? 0 : (int)(log10(time) + 1);
-            newIndexForMap = newIndex * ((int)pow(10, digits)) + time; // concatenate time value to the end of index for unique key
+            newIndexForMap = newIndex * ((int)pow(10, digits)) + time; 
             
             if(newx >= 1 and newx <= x_size and newy >= 1 and newy <= y_size and closed.find(newIndexForMap) == closed.end())
             {
                 cost = (int) map[newIndex];
-                if((cost >= 0) and (cost < collision_thresh)) // cell is free
-                {
-                    if(nodes.find(newIndexForMap) == nodes.end()) // create a new node, if it does not exist
-                    {
+                if((cost >= 0) and (cost < collision_thresh)){
+                    if(nodes.find(newIndexForMap) == nodes.end()){
                         int totalTime = timeElapsed + time;
-                        int h = (goals.find(newIndex) != goals.end() and totalTime <= goals[newIndex]) ? cost*(goals[newIndex] - totalTime) : heuristics[newIndex].first + abs(heuristics[newIndex].second - totalTime);
+                        int h = 0;
+                        if (goals.find(newIndex) != goals.end() and totalTime <= goals[newIndex])
+                            h = cost*(goals[newIndex] - totalTime);
+                        else h =  heuristics[newIndex].first + abs(heuristics[newIndex].second - totalTime);
                         shared_ptr<node> n = make_shared<node>(newIndex, time, h);
                         nodes[newIndexForMap] = n;
                     }
-                    if(nodes[newIndexForMap]->_g > s->_g + cost) // compare g values and cost, update parent if needed
+                    if(nodes[newIndexForMap]->_g > s->_g + cost) 
                     {
                         nodes[newIndexForMap]->_g = s->_g + cost;
-                        nodes[newIndexForMap]->_f = nodes[newIndexForMap]->_g + 1.8*nodes[newIndexForMap]->_h; // weighted A*
+                        nodes[newIndexForMap]->_f = nodes[newIndexForMap]->_g + 1.8*nodes[newIndexForMap]->_h; 
                         nodes[newIndexForMap]->parent = s;
                         openQueue.push(nodes[newIndexForMap]);
                     }
